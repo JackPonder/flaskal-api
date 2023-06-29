@@ -18,6 +18,7 @@ def create_app():
     app.register_blueprint(routes)
 
     # Configure models
+    from .models import User
     with app.app_context():
         db.create_all()
 
