@@ -14,8 +14,10 @@ def create_app():
     db.init_app(app)
 
     # Configure routes
-    from app.routes import routes
-    app.register_blueprint(routes)
+    from .users import users
+    app.register_blueprint(users)
+    from .polls import polls
+    app.register_blueprint(polls)
 
     # Configure models
     from .models import User, Poll, PollOption

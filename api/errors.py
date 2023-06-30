@@ -9,6 +9,6 @@ def error_response(status_code=400, message=None):
     if message:
         data["message"] = message
 
-    reponse = jsonify(data)
-    reponse.status_code = status_code
-    return reponse
+    response = jsonify(data)
+    response.status_code = status_code
+    return response
