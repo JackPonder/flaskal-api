@@ -18,7 +18,7 @@ def create_app():
     app.register_blueprint(routes)
 
     # Configure models
-    from .models import User
+    from .models import User, Poll, PollOption
     with app.app_context():
         db.create_all()
 
