@@ -1,27 +1,32 @@
+from sqlalchemy import Table, Column, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import List, Optional
 from datetime import date, datetime
 
 from . import db
 
-voters_table = db.Table(
+voters_table = Table(
     "voters",
-    db.Column("user_id", db.Integer, db.ForeignKey("users.id")),
-    db.Column("option_id", db.Integer, db.ForeignKey("poll_options.id")),
+    db.metadata,
+    Column("voter_id", ForeignKey("users.id")),
+    Column("option_id", ForeignKey("poll_options.id")),
 )
 
 
 class User(db.Model):
     __tablename__ = "users"
 
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.Text, unique=True, nullable=False)
-    password = db.Column(db.Text, nullable=False)
-    date_joined = db.Column(db.Date, nullable=False, default=date.today())
-    polls = db.relationship("Poll", backref="creator")
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(unique=True)
+    password: Mapped[str] = mapped_column()
+    date_joined: Mapped[date] = mapped_column(default=date.today())
+    polls: Mapped[List["Poll"]] = relationship(backref="creator")
+    comments: Mapped[List["Comment"]] = relationship(backref="creator")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"User #{self.id}"
     
-    def serialize(self):
+    def serialize(self) -> dict:
         return {
             "id": self.id,
             "username": self.username,
@@ -32,17 +37,18 @@ class User(db.Model):
 class Poll(db.Model):
     __tablename__ = "polls"
 
-    id = db.Column(db.Integer, primary_key=True)
-    creator_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    title = db.Column(db.Text, nullable=False)
-    options = db.relationship("PollOption", backref="poll")
-    tag = db.Column(db.Text)
-    timestamp = db.Column(db.DateTime, nullable=False, default=datetime.today())
+    id: Mapped[int] = mapped_column(primary_key=True)
+    creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    title: Mapped[str] = mapped_column()
+    options: Mapped[List["PollOption"]] = relationship(backref="poll")
+    tag: Mapped[Optional[str]] = mapped_column()
+    timestamp: Mapped[datetime] = mapped_column(default=datetime.today())
+    comments: Mapped[List["Comment"]] = relationship(backref="poll")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Poll #{self.id}"
     
-    def serialize(self):
+    def serialize(self) -> dict:
         return {
             "id": self.id,
             "creatorId": self.creator_id,
@@ -54,29 +60,50 @@ class Poll(db.Model):
             "timestamp": self.timestamp
         }
     
-    def get_total_votes(self):
+    def get_total_votes(self) -> int:
         return sum([option.votes for option in self.options])
     
-    def get_all_voters(self):
+    def get_all_voters(self) -> list:
         return [voter.id for option in self.options for voter in option.voters]
 
 
 class PollOption(db.Model):
     __tablename__ = "poll_options"
 
-    id = db.Column(db.Integer, primary_key=True)
-    poll_id = db.Column(db.Integer, db.ForeignKey("polls.id"), nullable=False)
-    name = db.Column(db.Text, nullable=False)
-    votes = db.Column(db.Integer, nullable=False, default=0)
-    voters = db.relationship("User", secondary=voters_table, backref="voted_options")
+    id: Mapped[int] = mapped_column(primary_key=True)
+    poll_id: Mapped[int] = mapped_column(ForeignKey("polls.id"))
+    name: Mapped[str] = mapped_column()
+    votes: Mapped[int] = mapped_column(default=0)
+    voters: Mapped[List["User"]] = relationship(secondary=voters_table)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Poll Option #{self.id}"
     
-    def serialize(self):
+    def serialize(self) -> dict:
         return {
             "id": self.id,
             "name": self.name,
             "votes": self.votes,
             "voters": [voter.id for voter in self.voters]
+        }
+
+
+class Comment(db.Model):
+    __tablename__ = "comments"
+
+    id: Mapped[int] = mapped_column(primary_key=True)    
+    creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    poll_id: Mapped[int] = mapped_column(ForeignKey("polls.id"))
+    content: Mapped[str] = mapped_column()
+    timestamp: Mapped[datetime] = mapped_column(default=datetime.today())
+
+    def __repr__(self) -> str:
+        return f"Comment #{self.id}"
+    
+    def serialize(self) -> dict:
+        return {
+            "id": self.id,
+            "creatorId": self.creator_id,
+            "content": self.content,
+            "timestamp": self.timestamp
         }
