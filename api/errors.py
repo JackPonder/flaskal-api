@@ -1,14 +1,13 @@
-from flask import jsonify
-from werkzeug.http import HTTP_STATUS_CODES
+from flask import Blueprint
+from werkzeug.exceptions import HTTPException
+
+errors = Blueprint("errors", __name__)
 
 
-def error_response(status_code=400, message=None):
-    """Return an error response"""
-
-    data = {"error": HTTP_STATUS_CODES.get(status_code, "Unknown Error")}
-    if message:
-        data["message"] = message
-
-    response = jsonify(data)
-    response.status_code = status_code
-    return response
+@errors.app_errorhandler(HTTPException)
+def error_response(error):
+    return {
+        "code": error.code,
+        "message": error.name,
+        "description": error.description
+    }, error.code

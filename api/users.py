@@ -1,9 +1,8 @@
-from flask import Blueprint, jsonify, url_for, request
+from flask import Blueprint, url_for, abort, request
 from werkzeug.security import generate_password_hash
 
 from . import db
 from .models import User
-from .errors import error_response
 
 users = Blueprint("users", __name__)
 
@@ -17,11 +16,11 @@ def create():
     username = json.get("username")
     password = json.get("password")
     if not username or not password:
-        return error_response(message="invalid data")
+        abort(400, description="Invalid data")
     
     # Ensure username is not already in use
     if db.session.query(User).filter_by(username=username).first():
-        return error_response(message="username already in use")
+        abort(400, description="Username already in use")
         
     # Add new user to database
     new_user = User(username=username, password=generate_password_hash(password))
@@ -29,10 +28,7 @@ def create():
     db.session.commit()
     
     # Return newly created user
-    response = jsonify(new_user.serialize())
-    response.status_code = 201
-    response.headers["Location"] = url_for("users.get", id=new_user.id)
-    return response
+    return new_user.serialize(), 201, {"location": url_for("users.get", id=new_user.id)}
 
 
 @users.route("/users/<int:id>", methods=["GET"])
@@ -44,9 +40,9 @@ def get(id: int):
 
     # Return an error if no user was found
     if not user:
-        return error_response(404, "invalid user id")
+        abort(404, description="No user was found for the specified id")
     
-    return jsonify(user.serialize())
+    return user.serialize()
 
 
 @users.route("/users/<int:id>/polls", methods=["GET"])
@@ -58,9 +54,9 @@ def polls(id: int):
 
     # Return an error if no user was found
     if not user:
-        return error_response(404, "invalid user id")
+        abort(404, description="No user was found for the specified id")
     
-    return jsonify([poll.serialize() for poll in user.polls])
+    return [poll.serialize() for poll in user.polls]
 
 
 @users.route("/users/<int:id>/comments", methods=["GET"])
@@ -72,6 +68,24 @@ def comments(id: int):
 
     # Return an error if no user was found
     if not user:
-        return error_response(404, "invalid user id")
+        abort(404, description="No user was found for the specified id")
     
-    return jsonify([comment.serialize() for comment in user.comments])
+    return [comment.serialize() for comment in user.comments]
+
+
+@users.route("/users/<int:id>", methods=["DELETE"])
+def delete(id: int):
+    """Delete a user"""
+
+    # Query user from database
+    user = db.session.get(User, id)
+
+    # Return an error if no user was found
+    if not user:
+        abort(404, description="No user was found for the specified id")
+
+    # Delete user
+    db.session.delete(user)
+    db.session.commit()
+
+    return "", 204

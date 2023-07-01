@@ -18,6 +18,8 @@ def create_app():
     app.register_blueprint(users)
     from .polls import polls
     app.register_blueprint(polls)
+    from .errors import errors
+    app.register_blueprint(errors)
 
     # Configure models
     from .models import User, Poll, PollOption
