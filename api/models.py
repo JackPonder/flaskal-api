@@ -19,12 +19,12 @@ class User(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column(unique=True)
     password: Mapped[str] = mapped_column()
-    date_joined: Mapped[date] = mapped_column(default=date.today())
+    date_joined: Mapped[date] = mapped_column(default=date.today)
     polls: Mapped[List["Poll"]] = relationship(backref="creator")
     comments: Mapped[List["Comment"]] = relationship(backref="creator")
 
     def __repr__(self) -> str:
-        return f"User #{self.id}"
+        return f"<User #{self.id}>"
     
     def serialize(self) -> dict:
         return {
@@ -42,11 +42,11 @@ class Poll(db.Model):
     title: Mapped[str] = mapped_column()
     options: Mapped[List["PollOption"]] = relationship(backref="poll")
     tag: Mapped[Optional[str]] = mapped_column()
-    timestamp: Mapped[datetime] = mapped_column(default=datetime.today())
+    timestamp: Mapped[datetime] = mapped_column(default=datetime.today)
     comments: Mapped[List["Comment"]] = relationship(backref="poll")
 
     def __repr__(self) -> str:
-        return f"Poll #{self.id}"
+        return f"<Poll #{self.id}>"
     
     def serialize(self) -> dict:
         return {
@@ -77,7 +77,7 @@ class PollOption(db.Model):
     voters: Mapped[List["User"]] = relationship(secondary=voters_table)
 
     def __repr__(self) -> str:
-        return f"Poll Option #{self.id}"
+        return f"<Poll Option #{self.id}>"
     
     def serialize(self) -> dict:
         return {
@@ -95,10 +95,10 @@ class Comment(db.Model):
     creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     poll_id: Mapped[int] = mapped_column(ForeignKey("polls.id"))
     content: Mapped[str] = mapped_column()
-    timestamp: Mapped[datetime] = mapped_column(default=datetime.today())
+    timestamp: Mapped[datetime] = mapped_column(default=datetime.today)
 
     def __repr__(self) -> str:
-        return f"Comment #{self.id}"
+        return f"<Comment #{self.id}>"
     
     def serialize(self) -> dict:
         return {

@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, url_for, request
 
 from . import db
-from .models import User, Poll, PollOption
+from .models import User, Poll, PollOption, Comment
 from .errors import error_response
 
 polls = Blueprint("polls", __name__)
@@ -39,6 +39,50 @@ def create():
     return response
 
 
+@polls.route("/polls/<int:id>/comments", methods=["POST"])
+def comment(id: int):
+    """Create a new comment on a specified poll"""
+    
+    # Query database for poll
+    poll = db.session.get(Poll, id)
+
+    # Return an error if no poll was found
+    if not poll:
+        return error_response(404, "invalid poll id")
+
+    # Ensure correct data was submitted
+    json = request.get_json() or {}
+    creator = db.session.get(User, json.get("creatorId"))
+    content = json.get("content")
+    if not creator or not content:
+        return error_response(message="invalid form data")
+    
+    # Add new comment to the database
+    new_comment = Comment(creator=creator, poll=poll, content=content)
+    db.session.add(new_comment)
+    db.session.commit()
+
+    # Return newly created comment
+    response = jsonify(new_comment.serialize())
+    response.status_code = 201
+    return response
+
+
+@polls.route("/polls", methods=["GET"])
+def all():
+    """Get a collection of polls"""
+
+    # Query database for polls
+    polls = db.session.query(Poll).all()
+
+    # Filter according to query parameter
+    tag = request.args.get("tag")
+    if tag:
+        polls = [poll for poll in polls if poll.tag == tag]
+
+    return jsonify([poll.serialize() for poll in polls])
+
+
 @polls.route("/polls/<int:id>", methods=["GET"])
 def get(id: int):
     """Get a poll by its id"""
@@ -53,14 +97,18 @@ def get(id: int):
     return jsonify(poll.serialize())
 
 
-@polls.route("/polls", methods=["GET"])
-def get_all():
-    """Get a collection of polls"""
+@polls.route("/polls/<int:id>/comments", methods=["GET"])
+def comments(id: int):
+    """Get a collection of comments on a specified poll"""
+    
+    # Query database for poll
+    poll = db.session.get(Poll, id)
 
-    # Query database for polls
-    polls = db.session.query(Poll).all()
-
-    return jsonify([poll.serialize() for poll in polls])
+    # Return an error if no poll was found
+    if not poll:
+        return error_response(404, "invalid poll id")
+    
+    return jsonify([comment.serialize() for comment in poll.comments])
 
 
 @polls.route("/polls/<int:id>/vote", methods=["PATCH"])

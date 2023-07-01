@@ -47,3 +47,31 @@ def get(id: int):
         return error_response(404, "invalid user id")
     
     return jsonify(user.serialize())
+
+
+@users.route("/users/<int:id>/polls", methods=["GET"])
+def polls(id: int):
+    """Get all of a user's polls"""
+
+    # Query user from database
+    user = db.session.get(User, id)
+
+    # Return an error if no user was found
+    if not user:
+        return error_response(404, "invalid user id")
+    
+    return jsonify([poll.serialize() for poll in user.polls])
+
+
+@users.route("/users/<int:id>/comments", methods=["GET"])
+def comments(id: int):
+    """Get all of a user's comments"""
+
+    # Query user from database
+    user = db.session.get(User, id)
+
+    # Return an error if no user was found
+    if not user:
+        return error_response(404, "invalid user id")
+    
+    return jsonify([comment.serialize() for comment in user.comments])
