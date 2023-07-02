@@ -11,18 +11,18 @@ def create():
     """Create a new poll"""
 
     # Ensure correct data was submitted
-    json = request.get_json() or {}
+    json = request.get_json()
+    if type(json) != dict: 
+        abort(400, description="Invalid data")
     creator = db.session.get(User, json.get("creatorId"))
     title = json.get("title")
     options = json.get("options")
     tag = json.get("tag")
     if not creator or not title or type(options) != list or len(options) < 2:
-        abort(400, description="Invalid form data")
+        abort(400, description="Invalid data")
 
     # Add new poll to database
-    new_poll = Poll(creator=creator, title=title)
-    if tag:
-        new_poll.tag = tag
+    new_poll = Poll(creator=creator, title=title, tag=tag)
     db.session.add(new_poll)
     for option in options:
         if not option:
@@ -40,18 +40,16 @@ def comment(id: int):
     """Create a new comment on a specified poll"""
     
     # Query database for poll
-    poll = db.session.get(Poll, id)
-
-    # Return an error if no poll was found
-    if not poll:
-        abort(404, description="No poll was found for the specified id")
+    poll = db.session.get(Poll, id) or abort(404, description="No poll was found for the specified id")
 
     # Ensure correct data was submitted
-    json = request.get_json() or {}
+    json = request.get_json()
+    if type(json) != dict: 
+        abort(400, description="Invalid data")
     creator = db.session.get(User, json.get("creatorId"))
     content = json.get("content")
     if not creator or not content:
-        abort(400, description="Invalid form data")
+        abort(400, description="Invalid data")
     
     # Add new comment to the database
     new_comment = Comment(creator=creator, poll=poll, content=content)
@@ -67,14 +65,14 @@ def all():
     """Get a collection of polls"""
 
     # Query database for polls
-    polls = db.session.query(Poll).all()
+    polls = db.session.query(Poll)
 
     # Filter according to query parameter
     tag = request.args.get("tag")
     if tag:
-        polls = [poll for poll in polls if poll.tag == tag]
+        polls = polls.filter_by(tag=tag)
 
-    return [poll.serialize() for poll in polls]
+    return [poll.serialize() for poll in polls.all()]
 
 
 @polls.route("/polls/<int:id>", methods=["GET"])
@@ -82,11 +80,7 @@ def get(id: int):
     """Get a poll by its id"""
     
     # Query database for poll
-    poll = db.session.get(Poll, id)
-
-    # Return an error if no poll was found
-    if not poll:
-        abort(404, description="No poll was found for the specified id")
+    poll = db.session.get(Poll, id) or abort(404, description="No poll was found for the specified id")
     
     return poll.serialize()
 
@@ -96,11 +90,7 @@ def comments(id: int):
     """Get a collection of comments on a specified poll"""
     
     # Query database for poll
-    poll = db.session.get(Poll, id)
-
-    # Return an error if no poll was found
-    if not poll:
-        abort(404, description="No poll was found for the specified id")
+    poll = db.session.get(Poll, id) or abort(404, description="No poll was found for the specified id")
     
     return [comment.serialize() for comment in poll.comments]
 
@@ -110,14 +100,12 @@ def vote(id: int):
     """Submit a vote for a poll"""
     
     # Query database for poll
-    poll = db.session.get(Poll, id)
-
-    # Return an error if no poll was found
-    if not poll:
-        abort(404, description="No poll was found for the specified id")
+    poll = db.session.get(Poll, id) or abort(404, description="No poll was found for the specified id")
     
     # Ensure correct data was submitted
-    json = request.get_json() or {}
+    json = request.get_json()
+    if type(json) != dict: 
+        abort(400, description="Invalid data")
     voter = db.session.get(User, json.get("voterId"))
     option = db.session.get(PollOption, json.get("vote"))
     if not voter or not option or option not in poll.options:

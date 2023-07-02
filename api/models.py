@@ -20,8 +20,8 @@ class User(db.Model):
     username: Mapped[str] = mapped_column(unique=True)
     password: Mapped[str] = mapped_column()
     date_joined: Mapped[date] = mapped_column(default=date.today)
-    polls: Mapped[List["Poll"]] = relationship(backref="creator")
-    comments: Mapped[List["Comment"]] = relationship(backref="creator")
+    polls: Mapped[List["Poll"]] = relationship(back_populates="creator")
+    comments: Mapped[List["Comment"]] = relationship(back_populates="creator")
 
     def __repr__(self) -> str:
         return f"<User #{self.id}>"
@@ -39,11 +39,12 @@ class Poll(db.Model):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    creator: Mapped["User"] = relationship(back_populates="polls")
     title: Mapped[str] = mapped_column()
-    options: Mapped[List["PollOption"]] = relationship(backref="poll")
+    options: Mapped[List["PollOption"]] = relationship(back_populates="poll")
     tag: Mapped[Optional[str]] = mapped_column()
     timestamp: Mapped[datetime] = mapped_column(default=datetime.today)
-    comments: Mapped[List["Comment"]] = relationship(backref="poll")
+    comments: Mapped[List["Comment"]] = relationship(back_populates="poll")
 
     def __repr__(self) -> str:
         return f"<Poll #{self.id}>"
@@ -72,6 +73,7 @@ class PollOption(db.Model):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     poll_id: Mapped[int] = mapped_column(ForeignKey("polls.id"))
+    poll: Mapped["Poll"] = relationship(back_populates="options")
     name: Mapped[str] = mapped_column()
     votes: Mapped[int] = mapped_column(default=0)
     voters: Mapped[List["User"]] = relationship(secondary=voters_table)
@@ -93,7 +95,9 @@ class Comment(db.Model):
 
     id: Mapped[int] = mapped_column(primary_key=True)    
     creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    creator: Mapped["User"] = relationship(back_populates="comments")
     poll_id: Mapped[int] = mapped_column(ForeignKey("polls.id"))
+    poll: Mapped["Poll"] = relationship(back_populates="comments")
     content: Mapped[str] = mapped_column()
     timestamp: Mapped[datetime] = mapped_column(default=datetime.today)
 
