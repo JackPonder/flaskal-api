@@ -112,7 +112,7 @@ def vote(id: int):
         abort(400, description="Invalid form data")
     
     # Ensure voter has not already voted on this poll
-    if voter.id in poll.get_all_voters():
+    if voter in poll.get_all_voters():
         abort(400, description="User has already voted on this poll")
         
     # Update poll with new vote

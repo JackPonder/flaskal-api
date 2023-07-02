@@ -20,8 +20,9 @@ class User(db.Model):
     username: Mapped[str] = mapped_column(unique=True)
     password: Mapped[str] = mapped_column()
     date_joined: Mapped[date] = mapped_column(default=date.today)
-    polls: Mapped[List["Poll"]] = relationship(back_populates="creator")
-    comments: Mapped[List["Comment"]] = relationship(back_populates="creator")
+
+    polls: Mapped[List["Poll"]] = relationship(back_populates="creator", cascade="all, delete")
+    comments: Mapped[List["Comment"]] = relationship(back_populates="creator", cascade="all, delete")
 
     def __repr__(self) -> str:
         return f"<User #{self.id}>"
@@ -39,12 +40,13 @@ class Poll(db.Model):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    creator: Mapped["User"] = relationship(back_populates="polls")
     title: Mapped[str] = mapped_column()
-    options: Mapped[List["PollOption"]] = relationship(back_populates="poll")
     tag: Mapped[Optional[str]] = mapped_column()
     timestamp: Mapped[datetime] = mapped_column(default=datetime.today)
-    comments: Mapped[List["Comment"]] = relationship(back_populates="poll")
+    
+    creator: Mapped["User"] = relationship(back_populates="polls")
+    options: Mapped[List["PollOption"]] = relationship(back_populates="poll", cascade="all, delete")
+    comments: Mapped[List["Comment"]] = relationship(back_populates="poll", cascade="all, delete")
 
     def __repr__(self) -> str:
         return f"<Poll #{self.id}>"
@@ -56,7 +58,7 @@ class Poll(db.Model):
             "title": self.title,
             "options": [option.serialize() for option in self.options],
             "totalVotes": self.get_total_votes(),
-            "voters": self.get_all_voters(),
+            "voters": [voter.id for voter in self.get_all_voters()],
             "tag": self.tag,
             "timestamp": self.timestamp
         }
@@ -64,8 +66,8 @@ class Poll(db.Model):
     def get_total_votes(self) -> int:
         return sum([option.votes for option in self.options])
     
-    def get_all_voters(self) -> list:
-        return [voter.id for option in self.options for voter in option.voters]
+    def get_all_voters(self) -> list[User]:
+        return [voter for option in self.options for voter in option.voters]
 
 
 class PollOption(db.Model):
@@ -73,9 +75,10 @@ class PollOption(db.Model):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     poll_id: Mapped[int] = mapped_column(ForeignKey("polls.id"))
-    poll: Mapped["Poll"] = relationship(back_populates="options")
     name: Mapped[str] = mapped_column()
     votes: Mapped[int] = mapped_column(default=0)
+
+    poll: Mapped["Poll"] = relationship(back_populates="options")
     voters: Mapped[List["User"]] = relationship(secondary=voters_table)
 
     def __repr__(self) -> str:
@@ -95,11 +98,12 @@ class Comment(db.Model):
 
     id: Mapped[int] = mapped_column(primary_key=True)    
     creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    creator: Mapped["User"] = relationship(back_populates="comments")
     poll_id: Mapped[int] = mapped_column(ForeignKey("polls.id"))
-    poll: Mapped["Poll"] = relationship(back_populates="comments")
     content: Mapped[str] = mapped_column()
     timestamp: Mapped[datetime] = mapped_column(default=datetime.today)
+
+    creator: Mapped["User"] = relationship(back_populates="comments")
+    poll: Mapped["Poll"] = relationship(back_populates="comments")
 
     def __repr__(self) -> str:
         return f"<Comment #{self.id}>"

@@ -70,14 +70,6 @@ def delete(id: int):
     # Query user from database
     user = db.session.get(User, id) or abort(404, description="No user was found for the specified id")
 
-    # Delete all of the user's polls and comments
-    for comment in user.comments:
-        db.session.delete(comment)
-    for poll in user.polls:
-        for option in poll.options:
-            db.session.delete(option)
-        db.session.delete(poll)
-
     # Delete user
     db.session.delete(user)
     db.session.commit()
