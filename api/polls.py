@@ -42,7 +42,9 @@ def comment(current_user: User, id: int):
     """Create a new comment on a specified poll"""
     
     # Query database for poll
-    poll = db.session.get(Poll, id) or abort(404, description="No poll was found for the specified id")
+    poll = db.session.get(Poll, id)
+    if not poll: 
+        abort(404, description="No poll was found for the specified id")
 
     # Ensure correct data was submitted
     json = request.get_json()
@@ -81,7 +83,9 @@ def get(id: int):
     """Get a poll by its id"""
     
     # Query database for poll
-    poll = db.session.get(Poll, id) or abort(404, description="No poll was found for the specified id")
+    poll = db.session.get(Poll, id)
+    if not poll: 
+        abort(404, description="No poll was found for the specified id")
     
     return poll.serialize()
 
@@ -91,7 +95,9 @@ def comments(id: int):
     """Get a collection of comments on a specified poll"""
     
     # Query database for poll
-    poll = db.session.get(Poll, id) or abort(404, description="No poll was found for the specified id")
+    poll = db.session.get(Poll, id)
+    if not poll: 
+        abort(404, description="No poll was found for the specified id")
     
     return [comment.serialize() for comment in poll.comments]
 
@@ -102,7 +108,9 @@ def vote(current_user: User, id: int):
     """Submit a vote for a poll"""
     
     # Query database for poll
-    poll = db.session.get(Poll, id) or abort(404, description="No poll was found for the specified id")
+    poll = db.session.get(Poll, id)
+    if not poll: 
+        abort(404, description="No poll was found for the specified id")
     
     # Ensure correct data was submitted
     json = request.get_json()
@@ -113,7 +121,7 @@ def vote(current_user: User, id: int):
         abort(400, description="Invalid form data")
     
     # Ensure voter has not already voted on this poll
-    if current_user in poll.get_all_voters():
+    if current_user in poll.get_voters():
         abort(400, description="User has already voted on this poll")
         
     # Update poll with new vote

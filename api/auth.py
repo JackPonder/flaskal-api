@@ -17,7 +17,10 @@ def token_required(f):
         token = token.split(" ")[1]
 
         try:
-            data = jwt.decode(token, current_app.config.get("SECRET_KEY"), algorithms=["HS256"]) or {}
+            data = jwt.decode(token, current_app.config.get("SECRET_KEY"), algorithms=["HS256"])
+            if type(data) != dict: 
+                abort(401)
+
             curent_user = db.session.get(User, data.get("user_id"))
             if not curent_user:
                 abort(401)

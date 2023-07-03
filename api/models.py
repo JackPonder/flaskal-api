@@ -1,6 +1,6 @@
 from sqlalchemy import Table, Column, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from werkzeug.security import check_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 from typing import List, Optional
 from datetime import date, datetime
 
@@ -25,17 +25,20 @@ class User(db.Model):
     polls: Mapped[List["Poll"]] = relationship(back_populates="creator", cascade="all, delete")
     comments: Mapped[List["Comment"]] = relationship(back_populates="creator", cascade="all, delete")
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.password = generate_password_hash(kwargs.get("password"))
+
     def __repr__(self) -> str:
         return f"<User #{self.id}>"
     
     def serialize(self) -> dict:
         return {
-            "id": self.id,
             "username": self.username,
             "dateJoined": self.date_joined,
         }
     
-    def check_password(self, password: str): 
+    def check_password(self, password: str) -> bool: 
         return check_password_hash(self.password, password)
 
 
@@ -58,11 +61,11 @@ class Poll(db.Model):
     def serialize(self) -> dict:
         return {
             "id": self.id,
-            "creatorId": self.creator_id,
+            "creator": self.creator.username,
             "title": self.title,
             "options": [option.serialize() for option in self.options],
             "totalVotes": self.get_total_votes(),
-            "voters": [voter.id for voter in self.get_all_voters()],
+            "voters": [voter.username for voter in self.get_voters()],
             "tag": self.tag,
             "timestamp": self.timestamp
         }
@@ -70,7 +73,7 @@ class Poll(db.Model):
     def get_total_votes(self) -> int:
         return sum([option.votes for option in self.options])
     
-    def get_all_voters(self) -> list[User]:
+    def get_voters(self) -> list[User]:
         return [voter for option in self.options for voter in option.voters]
 
 
@@ -93,7 +96,7 @@ class PollOption(db.Model):
             "id": self.id,
             "name": self.name,
             "votes": self.votes,
-            "voters": [voter.id for voter in self.voters]
+            "voters": [voter.username for voter in self.voters]
         }
 
 
@@ -114,8 +117,7 @@ class Comment(db.Model):
     
     def serialize(self) -> dict:
         return {
-            "id": self.id,
-            "creatorId": self.creator_id,
+            "creator": self.creator.username,
             "content": self.content,
             "timestamp": self.timestamp
         }

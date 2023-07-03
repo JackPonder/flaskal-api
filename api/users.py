@@ -1,5 +1,4 @@
 from flask import Blueprint, url_for, abort, request
-from werkzeug.security import generate_password_hash
 
 from . import db
 from .models import User
@@ -9,7 +8,7 @@ users = Blueprint("users", __name__)
 
 
 @users.route("/users", methods=["POST"])
-def create():
+def register():
     """Register a new user"""
 
     # Ensure correct data was submitted
@@ -26,7 +25,7 @@ def create():
         abort(409, description="Username already in use")
         
     # Add new user to database
-    new_user = User(username=username, password=generate_password_hash(password))
+    new_user = User(username=username, password=password)
     db.session.add(new_user)
     db.session.commit()
     
@@ -39,7 +38,9 @@ def get(id: int):
     """Get a user by their id"""
 
     # Query user from database
-    user = db.session.get(User, id) or abort(404, description="No user was found for the specified id")
+    user = db.session.get(User, id)
+    if not user: 
+        abort(404, description="No user was found for the specified id")
     
     return user.serialize()
 
@@ -49,7 +50,9 @@ def polls(id: int):
     """Get a collection of all of a user's polls"""
 
     # Query user from database
-    user = db.session.get(User, id) or abort(404, description="No user was found for the specified id")
+    user = db.session.get(User, id)
+    if not user: 
+        abort(404, description="No user was found for the specified id")
     
     return [poll.serialize() for poll in user.polls]
 
@@ -59,7 +62,9 @@ def comments(id: int):
     """Get a collection of all of a user's comments"""
 
     # Query user from database
-    user = db.session.get(User, id) or abort(404, description="No user was found for the specified id")
+    user = db.session.get(User, id)
+    if not user: 
+        abort(404, description="No user was found for the specified id")
     
     return [comment.serialize() for comment in user.comments]
 
