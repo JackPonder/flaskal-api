@@ -3,6 +3,7 @@ from werkzeug.security import generate_password_hash
 
 from . import db
 from .models import User
+from .auth import token_required
 
 users = Blueprint("users", __name__)
 
@@ -22,7 +23,7 @@ def create():
     
     # Ensure username is not already in use
     if db.session.query(User).filter_by(username=username).first():
-        abort(400, description="Username already in use")
+        abort(409, description="Username already in use")
         
     # Add new user to database
     new_user = User(username=username, password=generate_password_hash(password))
@@ -63,15 +64,13 @@ def comments(id: int):
     return [comment.serialize() for comment in user.comments]
 
 
-@users.route("/users/<int:id>", methods=["DELETE"])
-def delete(id: int):
+@users.route("/users/self", methods=["DELETE"])
+@token_required
+def delete(current_user: User):
     """Delete a user"""
 
-    # Query user from database
-    user = db.session.get(User, id) or abort(404, description="No user was found for the specified id")
-
     # Delete user
-    db.session.delete(user)
+    db.session.delete(current_user)
     db.session.commit()
 
     return "", 204

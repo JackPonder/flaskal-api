@@ -1,5 +1,6 @@
 from sqlalchemy import Table, Column, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from werkzeug.security import check_password_hash
 from typing import List, Optional
 from datetime import date, datetime
 
@@ -33,6 +34,9 @@ class User(db.Model):
             "username": self.username,
             "dateJoined": self.date_joined,
         }
+    
+    def check_password(self, password: str): 
+        return check_password_hash(self.password, password)
 
 
 class Poll(db.Model):

@@ -2,27 +2,28 @@ from flask import Blueprint, url_for, abort, request
 
 from . import db
 from .models import User, Poll, PollOption, Comment
+from .auth import token_required
 
 polls = Blueprint("polls", __name__)
 
 
 @polls.route("/polls", methods=["POST"])
-def create():
+@token_required
+def create(current_user: User):
     """Create a new poll"""
 
     # Ensure correct data was submitted
     json = request.get_json()
     if type(json) != dict: 
         abort(400, description="Invalid data")
-    creator = db.session.get(User, json.get("creatorId"))
     title = json.get("title")
     options = json.get("options")
     tag = json.get("tag")
-    if not creator or not title or type(options) != list or len(options) < 2:
+    if not title or type(options) != list or len(options) < 2:
         abort(400, description="Invalid data")
 
     # Add new poll to database
-    new_poll = Poll(creator=creator, title=title, tag=tag)
+    new_poll = Poll(creator=current_user, title=title, tag=tag if tag else None)
     db.session.add(new_poll)
     for option in options:
         if not option:
@@ -36,7 +37,8 @@ def create():
 
 
 @polls.route("/polls/<int:id>/comments", methods=["POST"])
-def comment(id: int):
+@token_required
+def comment(current_user: User, id: int):
     """Create a new comment on a specified poll"""
     
     # Query database for poll
@@ -46,13 +48,12 @@ def comment(id: int):
     json = request.get_json()
     if type(json) != dict: 
         abort(400, description="Invalid data")
-    creator = db.session.get(User, json.get("creatorId"))
     content = json.get("content")
-    if not creator or not content:
+    if not content:
         abort(400, description="Invalid data")
     
     # Add new comment to the database
-    new_comment = Comment(creator=creator, poll=poll, content=content)
+    new_comment = Comment(creator=current_user, poll=poll, content=content)
     db.session.add(new_comment)
     db.session.commit()
 
@@ -96,7 +97,8 @@ def comments(id: int):
 
 
 @polls.route("/polls/<int:id>/vote", methods=["PATCH"])
-def vote(id: int):
+@token_required
+def vote(current_user: User, id: int):
     """Submit a vote for a poll"""
     
     # Query database for poll
@@ -106,18 +108,17 @@ def vote(id: int):
     json = request.get_json()
     if type(json) != dict: 
         abort(400, description="Invalid data")
-    voter = db.session.get(User, json.get("voterId"))
     option = db.session.get(PollOption, json.get("vote"))
-    if not voter or not option or option not in poll.options:
+    if not option or option not in poll.options:
         abort(400, description="Invalid form data")
     
     # Ensure voter has not already voted on this poll
-    if voter in poll.get_all_voters():
+    if current_user in poll.get_all_voters():
         abort(400, description="User has already voted on this poll")
         
     # Update poll with new vote
     option.votes += 1
-    option.voters.append(voter)
+    option.voters.append(current_user)
     db.session.commit()
 
     # Return updated poll
