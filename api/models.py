@@ -34,6 +34,7 @@ class User(db.Model):
     
     def serialize(self) -> dict:
         return {
+            "id": self.id,
             "username": self.username,
             "dateJoined": self.date_joined,
         }
@@ -118,6 +119,7 @@ class Comment(db.Model):
     def serialize(self) -> dict:
         return {
             "creator": self.creator.username,
+            "poll": self.poll.title,
             "content": self.content,
             "timestamp": self.timestamp
         }

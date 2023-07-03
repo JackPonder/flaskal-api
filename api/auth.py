@@ -1,32 +1,24 @@
-from flask import abort, request, current_app
+from flask import abort, request, g
 from functools import wraps
-import jwt
 
 from . import db
 from .models import User
 
 
-def token_required(f): 
-    """Decorate a route to require token authentication"""
+def auth_required(f): 
+    """Decorate a route to require an authenticated user"""
 
     @wraps(f)
     def decorator(*args, **kwargs):
-        token = request.headers.get("authorization")
-        if not token:
+        auth = request.authorization
+        if not auth:
             abort(401)
-        token = token.split(" ")[1]
 
-        try:
-            data = jwt.decode(token, current_app.config.get("SECRET_KEY"), algorithms=["HS256"])
-            if type(data) != dict: 
-                abort(401)
-
-            curent_user = db.session.get(User, data.get("user_id"))
-            if not curent_user:
-                abort(401)
-
-            return f(curent_user, *args, **kwargs)
-        except jwt.PyJWKError:
+        user = db.session.query(User).filter_by(username=auth.username).first()
+        if not user or not user.check_password(auth.password):
             abort(401)
+        g.user = user
+
+        return f(*args, **kwargs)
 
     return decorator

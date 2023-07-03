@@ -1,8 +1,8 @@
-from flask import Blueprint, url_for, abort, request
+from flask import Blueprint, url_for, abort, request, g
 
 from . import db
 from .models import User
-from .auth import token_required
+from .auth import auth_required
 
 users = Blueprint("users", __name__)
 
@@ -14,11 +14,11 @@ def register():
     # Ensure correct data was submitted
     json = request.get_json()
     if type(json) != dict: 
-        abort(400, description="Invalid data")
+        abort(400)
     username = json.get("username")
     password = json.get("password")
     if not username or not password:
-        abort(400, description="Invalid data")
+        abort(400)
     
     # Ensure username is not already in use
     if db.session.query(User).filter_by(username=username).first():
@@ -69,13 +69,22 @@ def comments(id: int):
     return [comment.serialize() for comment in user.comments]
 
 
-@users.route("/users/self", methods=["DELETE"])
-@token_required
-def delete(current_user: User):
+@users.route("/users/<int:id>", methods=["DELETE"])
+@auth_required
+def delete(id: int):
     """Delete a user"""
 
+    # Query user from database
+    user = db.session.get(User, id)
+    if not user: 
+        abort(404, description="No user was found for the specified id")
+
+    # Ensure user has correct permissions
+    if g.user.id != user.id: 
+        abort(403)
+
     # Delete user
-    db.session.delete(current_user)
+    db.session.delete(user)
     db.session.commit()
 
     return "", 204
