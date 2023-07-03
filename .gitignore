@@ -1,8 +1,14 @@
 # Byte-compiled files
 __pycache__/
 
-# Development database
-*.sqlite3
+# Flask stuff
+instance/
 
 # Virtual environments
-venv/
+.venv
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
