@@ -121,7 +121,7 @@ def vote(id: int):
         abort(400)
     
     # Ensure voter has not already voted on this poll
-    if g.user in poll.get_voters():
+    if g.user in poll.voters():
         abort(409, description="User has already voted on this poll")
         
     # Update poll with new vote

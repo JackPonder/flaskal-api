@@ -1,7 +1,7 @@
 from sqlalchemy import Table, Column, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from werkzeug.security import generate_password_hash, check_password_hash
-from typing import List, Optional
+from typing import Optional
 from datetime import date, datetime
 
 from . import db
@@ -20,10 +20,10 @@ class User(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column(unique=True)
     password: Mapped[str] = mapped_column()
-    date_joined: Mapped[date] = mapped_column(default=date.today)
+    date_joined: Mapped[date] = mapped_column(default=datetime.utcnow)
 
-    polls: Mapped[List["Poll"]] = relationship(back_populates="creator", cascade="all, delete")
-    comments: Mapped[List["Comment"]] = relationship(back_populates="creator", cascade="all, delete")
+    polls: Mapped[list["Poll"]] = relationship(back_populates="creator", cascade="all, delete")
+    comments: Mapped[list["Comment"]] = relationship(back_populates="creator", cascade="all, delete")
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -50,11 +50,11 @@ class Poll(db.Model):
     creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     title: Mapped[str] = mapped_column()
     tag: Mapped[Optional[str]] = mapped_column()
-    timestamp: Mapped[datetime] = mapped_column(default=datetime.today)
+    timestamp: Mapped[datetime] = mapped_column(default=datetime.utcnow)
     
     creator: Mapped["User"] = relationship(back_populates="polls")
-    options: Mapped[List["PollOption"]] = relationship(back_populates="poll", cascade="all, delete")
-    comments: Mapped[List["Comment"]] = relationship(back_populates="poll", cascade="all, delete")
+    options: Mapped[list["PollOption"]] = relationship(back_populates="poll", cascade="all, delete")
+    comments: Mapped[list["Comment"]] = relationship(back_populates="poll", cascade="all, delete")
 
     def __repr__(self) -> str:
         return f"<Poll #{self.id}>"
@@ -65,16 +65,17 @@ class Poll(db.Model):
             "creator": self.creator.username,
             "title": self.title,
             "options": [option.serialize() for option in self.options],
-            "totalVotes": self.get_total_votes(),
-            "voters": [voter.username for voter in self.get_voters()],
+            "totalVotes": self.total_votes(),
+            "voters": [voter.username for voter in self.voters()],
             "tag": self.tag,
-            "timestamp": self.timestamp
+            "timestamp": self.timestamp,
+            "numComments": len(self.comments)
         }
     
-    def get_total_votes(self) -> int:
+    def total_votes(self) -> int:
         return sum([option.votes for option in self.options])
     
-    def get_voters(self) -> list[User]:
+    def voters(self) -> list[User]:
         return [voter for option in self.options for voter in option.voters]
 
 
@@ -87,7 +88,7 @@ class PollOption(db.Model):
     votes: Mapped[int] = mapped_column(default=0)
 
     poll: Mapped["Poll"] = relationship(back_populates="options")
-    voters: Mapped[List["User"]] = relationship(secondary=voters_table)
+    voters: Mapped[list["User"]] = relationship(secondary=voters_table)
 
     def __repr__(self) -> str:
         return f"<Poll Option #{self.id}>"
@@ -97,6 +98,7 @@ class PollOption(db.Model):
             "id": self.id,
             "name": self.name,
             "votes": self.votes,
+            "percentage": round(100 * self.votes / self.poll.total_votes()) if self.poll.total_votes() != 0 else 0,
             "voters": [voter.username for voter in self.voters]
         }
 
@@ -108,7 +110,7 @@ class Comment(db.Model):
     creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     poll_id: Mapped[int] = mapped_column(ForeignKey("polls.id"))
     content: Mapped[str] = mapped_column()
-    timestamp: Mapped[datetime] = mapped_column(default=datetime.today)
+    timestamp: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
     creator: Mapped["User"] = relationship(back_populates="comments")
     poll: Mapped["Poll"] = relationship(back_populates="comments")
@@ -118,6 +120,7 @@ class Comment(db.Model):
     
     def serialize(self) -> dict:
         return {
+            "id": self.id,
             "creator": self.creator.username,
             "poll": self.poll.title,
             "content": self.content,
