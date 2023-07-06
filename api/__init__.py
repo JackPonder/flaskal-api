@@ -1,8 +1,10 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
 
 # App extensions
 db = SQLAlchemy()
+cors = CORS()
 
 
 def create_app():
@@ -25,5 +27,8 @@ def create_app():
     app.register_blueprint(polls)
     from .errors import errors
     app.register_blueprint(errors)
+
+    # Configure CORS
+    cors.init_app(app)
 
     return app
