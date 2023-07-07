@@ -1,5 +1,6 @@
-from flask import abort, request, g
+from flask import abort, request, g, current_app
 from functools import wraps
+import jwt
 
 from . import db
 from .models import User
@@ -10,12 +11,18 @@ def auth_required(f):
 
     @wraps(f)
     def decorator(*args, **kwargs):
-        auth = request.authorization
+        auth = request.headers.get('Authorization')
         if not auth:
             abort(401)
+        token = auth.split()[1]
 
-        user = db.session.query(User).filter_by(username=auth.username).first()
-        if not user or not user.check_password(auth.password):
+        try:
+            data = jwt.decode(token, current_app.config.get("SECRET_KEY"), algorithms=["HS256"])
+        except jwt.PyJWTError:
+            abort(401)
+        
+        user = db.session.get(User, data.get("id"))
+        if not user:
             abort(401)
         g.user = user
 

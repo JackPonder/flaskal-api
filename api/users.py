@@ -88,3 +88,9 @@ def delete(id: int):
     db.session.commit()
 
     return "", 204
+
+
+@users.get("/users/self")
+@auth_required
+def get_token_user(): 
+    return g.user.serialize()

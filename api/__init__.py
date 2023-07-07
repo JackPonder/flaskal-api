@@ -25,6 +25,8 @@ def create_app():
     app.register_blueprint(users)
     from .polls import polls
     app.register_blueprint(polls)
+    from .tokens import tokens
+    app.register_blueprint(tokens)
     from .errors import errors
     app.register_blueprint(errors)
 
