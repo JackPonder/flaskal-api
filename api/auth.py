@@ -12,7 +12,7 @@ def auth_required(f):
     @wraps(f)
     def decorator(*args, **kwargs):
         auth = request.headers.get('Authorization')
-        if not auth:
+        if not auth or len(auth.split()) < 2:
             abort(401)
         token = auth.split()[1]
 

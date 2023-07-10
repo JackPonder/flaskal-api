@@ -30,52 +30,52 @@ def register():
     db.session.commit()
     
     # Return newly created user
-    return new_user.serialize(), 201, {"location": url_for("users.get", id=new_user.id)}
+    return new_user.serialize(), 201, {"location": url_for("users.get", username=new_user.username)}
 
 
-@users.route("/users/<int:id>", methods=["GET"])
-def get(id: int):
+@users.route("/users/<string:username>", methods=["GET"])
+def get(username: str):
     """Get a user by their id"""
 
     # Query user from database
-    user = db.session.get(User, id)
+    user = db.session.query(User).filter_by(username=username).first()
     if not user: 
         abort(404, description="No user was found for the specified id")
     
     return user.serialize()
 
 
-@users.route("/users/<int:id>/polls", methods=["GET"])
-def polls(id: int):
+@users.route("/users/<string:username>/polls", methods=["GET"])
+def polls(username: str):
     """Get a collection of all of a user's polls"""
 
     # Query user from database
-    user = db.session.get(User, id)
+    user = db.session.query(User).filter_by(username=username).first()
     if not user: 
         abort(404, description="No user was found for the specified id")
     
     return [poll.serialize() for poll in user.polls]
 
 
-@users.route("/users/<int:id>/comments", methods=["GET"])
-def comments(id: int):
+@users.route("/users/<string:username>/comments", methods=["GET"])
+def comments(username: str):
     """Get a collection of all of a user's comments"""
 
     # Query user from database
-    user = db.session.get(User, id)
+    user = db.session.query(User).filter_by(username=username).first()
     if not user: 
         abort(404, description="No user was found for the specified id")
     
     return [comment.serialize() for comment in user.comments]
 
 
-@users.route("/users/<int:id>", methods=["DELETE"])
+@users.route("/users/<string:username>", methods=["DELETE"])
 @auth_required
-def delete(id: int):
+def delete(username: str):
     """Delete a user"""
 
     # Query user from database
-    user = db.session.get(User, id)
+    user = db.session.query(User).filter_by(username=username).first()
     if not user: 
         abort(404, description="No user was found for the specified id")
 
