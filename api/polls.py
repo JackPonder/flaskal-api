@@ -7,7 +7,7 @@ from .auth import auth_required
 polls = Blueprint("polls", __name__)
 
 
-@polls.route("/polls", methods=["POST"])
+@polls.post("/polls")
 @auth_required
 def create():
     """Create a new poll"""
@@ -26,8 +26,6 @@ def create():
     new_poll = Poll(creator=g.user, title=title, tag=tag if tag else None)
     db.session.add(new_poll)
     for option in options:
-        if not option:
-            continue
         new_option = PollOption(poll=new_poll, name=option)
         db.session.add(new_option)
     db.session.commit()
@@ -36,7 +34,7 @@ def create():
     return new_poll.serialize(), 201, {"location": url_for("polls.get", id=new_poll.id)}
 
 
-@polls.route("/polls/<int:id>/comments", methods=["POST"])
+@polls.post("/polls/<int:id>/comments")
 @auth_required
 def comment(id: int):
     """Create a new comment on a specified poll"""
@@ -63,12 +61,19 @@ def comment(id: int):
     return new_comment.serialize(), 201
 
 
-@polls.route("/polls", methods=["GET"])
+@polls.get("/polls")
 def all():
     """Get a collection of polls"""
 
     # Query database for polls
     polls = db.session.query(Poll)
+
+    # Sort according to query parameter
+    sort = request.args.get("sort")
+    if sort == "new":
+        polls = polls.order_by(Poll.timestamp.desc())
+    elif sort == "top": 
+        polls = polls.order_by(Poll.total_votes.desc())
 
     # Filter according to query parameter
     tag = request.args.get("tag")
@@ -78,7 +83,7 @@ def all():
     return [poll.serialize() for poll in polls.all()]
 
 
-@polls.route("/polls/<int:id>", methods=["GET"])
+@polls.get("/polls/<int:id>")
 def get(id: int):
     """Get a poll by its id"""
     
@@ -90,7 +95,7 @@ def get(id: int):
     return poll.serialize()
 
 
-@polls.route("/polls/<int:id>/comments", methods=["GET"])
+@polls.get("/polls/<int:id>/comments")
 def comments(id: int):
     """Get a collection of comments on a specified poll"""
     
@@ -102,7 +107,7 @@ def comments(id: int):
     return [comment.serialize() for comment in poll.comments]
 
 
-@polls.route("/polls/<int:id>/vote", methods=["PATCH"])
+@polls.patch("/polls/<int:id>/vote")
 @auth_required
 def vote(id: int):
     """Submit a vote for a poll"""
@@ -133,7 +138,7 @@ def vote(id: int):
     return poll.serialize(), {"location": url_for("polls.get", id=poll.id)}
 
 
-@polls.route("/polls/<int:id>", methods=["DELETE"])
+@polls.delete("/polls/<int:id>")
 @auth_required
 def delete(id: int): 
     """Delete a poll"""

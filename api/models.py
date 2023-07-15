@@ -1,5 +1,6 @@
-from sqlalchemy import Table, Column, ForeignKey
+from sqlalchemy import Table, Column, ForeignKey, select, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.ext.hybrid import hybrid_property
 from werkzeug.security import generate_password_hash, check_password_hash
 from typing import Optional
 from datetime import date, datetime
@@ -64,15 +65,21 @@ class Poll(db.Model):
             "creator": self.creator.username,
             "title": self.title,
             "options": [option.serialize() for option in self.options],
-            "totalVotes": self.total_votes(),
+            "totalVotes": self.total_votes,
             "voters": [voter.username for voter in self.voters()],
             "tag": self.tag,
             "timestamp": self.timestamp,
             "numComments": len(self.comments)
         }
     
+    @hybrid_property
     def total_votes(self) -> int:
         return sum([option.votes for option in self.options])
+    
+    @total_votes.expression
+    @classmethod
+    def total_votes(cls): 
+        return select(func.sum(PollOption.votes)).where(PollOption.poll_id == cls.id).scalar_subquery()
     
     def voters(self) -> list[User]:
         return [voter for option in self.options for voter in option.voters]
@@ -97,7 +104,8 @@ class PollOption(db.Model):
             "id": self.id,
             "name": self.name,
             "votes": self.votes,
-            "percentage": round(100 * self.votes / self.poll.total_votes()) if self.poll.total_votes() != 0 else 0,
+            "percentage": round(100 * self.votes / self.poll.total_votes) \
+                if self.poll.total_votes != 0 else 0,
             "voters": [voter.username for voter in self.voters]
         }
 

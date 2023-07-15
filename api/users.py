@@ -7,7 +7,7 @@ from .auth import auth_required
 users = Blueprint("users", __name__)
 
 
-@users.route("/users", methods=["POST"])
+@users.post("/users")
 def register():
     """Register a new user"""
 
@@ -33,43 +33,43 @@ def register():
     return new_user.serialize(), 201, {"location": url_for("users.get", username=new_user.username)}
 
 
-@users.route("/users/<string:username>", methods=["GET"])
+@users.get("/users/<string:username>")
 def get(username: str):
     """Get a user by their id"""
 
     # Query user from database
     user = db.session.query(User).filter_by(username=username).first()
     if not user: 
-        abort(404, description="No user was found for the specified id")
+        abort(404, description="No user was found for the specified username")
     
     return user.serialize()
 
 
-@users.route("/users/<string:username>/polls", methods=["GET"])
+@users.get("/users/<string:username>/polls")
 def polls(username: str):
     """Get a collection of all of a user's polls"""
 
     # Query user from database
     user = db.session.query(User).filter_by(username=username).first()
     if not user: 
-        abort(404, description="No user was found for the specified id")
+        abort(404, description="No user was found for the specified username")
     
     return [poll.serialize() for poll in user.polls]
 
 
-@users.route("/users/<string:username>/comments", methods=["GET"])
+@users.get("/users/<string:username>/comments")
 def comments(username: str):
     """Get a collection of all of a user's comments"""
 
     # Query user from database
     user = db.session.query(User).filter_by(username=username).first()
     if not user: 
-        abort(404, description="No user was found for the specified id")
+        abort(404, description="No user was found for the specified username")
     
     return [comment.serialize() for comment in user.comments]
 
 
-@users.route("/users/<string:username>", methods=["DELETE"])
+@users.delete("/users/<string:username>")
 @auth_required
 def delete(username: str):
     """Delete a user"""
@@ -77,7 +77,7 @@ def delete(username: str):
     # Query user from database
     user = db.session.query(User).filter_by(username=username).first()
     if not user: 
-        abort(404, description="No user was found for the specified id")
+        abort(404, description="No user was found for the specified username")
 
     # Ensure user has correct permissions
     if g.user.id != user.id: 
