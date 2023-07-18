@@ -126,7 +126,7 @@ def vote(id: int):
         abort(400)
     
     # Ensure voter has not already voted on this poll
-    if g.user in poll.voters():
+    if g.user in poll.voters:
         abort(409, description="User has already voted on this poll")
         
     # Update poll with new vote
@@ -157,3 +157,26 @@ def delete(id: int):
     db.session.commit()
 
     return "", 204
+
+
+@polls.delete("/comments/<int:id>")
+@auth_required
+def delete_comment(id: int):
+    """Delete a comment"""
+
+    # Query database for comment
+    comment = db.session.get(Comment, id)
+    if not comment:
+        abort(404, description="No comment was found for the specified id")
+
+    # Ensure user has correct permissions
+    if g.user.id != comment.creator.id: 
+        abort(403)
+
+    # Delete comment
+    db.session.delete(comment)
+    db.session.commit()
+
+    return "", 204
+
+    
