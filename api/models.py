@@ -76,7 +76,7 @@ class Poll(db.Model):
     def total_votes(self) -> int:
         return sum(option.votes for option in self.options)
 
-    @total_votes.expression
+    @total_votes.inplace.expression
     @classmethod
     def total_votes(cls):
         return select(func.sum(PollOption.votes)).where(PollOption.poll_id == cls.id).label("total_votes")
@@ -105,10 +105,13 @@ class PollOption(db.Model):
             "id": self.id,
             "name": self.name,
             "votes": self.votes,
-            "percentage": round(100 * self.votes / self.poll.total_votes)
-                if self.poll.total_votes != 0 else 0,
+            "percentage": self.percentage,
             "voters": [voter.username for voter in self.voters]
         }
+    
+    @property
+    def percentage(self) -> int:
+        return round(100 * self.votes / self.poll.total_votes) if self.poll.total_votes != 0 else 0
 
 
 class Comment(db.Model):
@@ -130,10 +133,8 @@ class Comment(db.Model):
         return {
             "id": self.id,
             "creator": self.creator.username,
-            "poll": {
-                "title": self.poll.title, 
-                "id": self.poll.id
-            },
+            "pollId": self.poll.id,
+            "pollTitle": self.poll.title,
             "content": self.content,
             "timestamp": self.timestamp
         }

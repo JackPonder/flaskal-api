@@ -6,7 +6,7 @@ errors = Blueprint("errors", __name__)
 
 
 @errors.app_errorhandler(HTTPException)
-def http_error(error):
+def http_error(error: HTTPException):
     return {
         "code": error.code,
         "message": error.name,
@@ -15,7 +15,7 @@ def http_error(error):
 
 
 @errors.app_errorhandler(SQLAlchemyError)
-def sqlalchemy_error(error):
+def sqlalchemy_error(error: SQLAlchemyError):
     return {
         "code": 500,
         "message": "SQLAlchemy Error", 

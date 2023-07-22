@@ -9,7 +9,7 @@ polls = Blueprint("polls", __name__)
 
 @polls.post("/polls")
 @auth_required
-def create():
+def create_poll():
     """Create a new poll"""
 
     # Ensure correct data was submitted
@@ -31,12 +31,12 @@ def create():
     db.session.commit()
 
     # Return newly created poll
-    return new_poll.serialize(), 201, {"location": url_for("polls.get", id=new_poll.id)}
+    return new_poll.serialize(), 201, {"location": url_for("polls.get_poll", id=new_poll.id)}
 
 
 @polls.post("/polls/<int:id>/comments")
 @auth_required
-def comment(id: int):
+def create_comment(id: int):
     """Create a new comment on a specified poll"""
     
     # Query database for poll
@@ -62,7 +62,7 @@ def comment(id: int):
 
 
 @polls.get("/polls")
-def all():
+def get_polls():
     """Get a collection of polls"""
 
     # Query database for polls
@@ -84,7 +84,7 @@ def all():
 
 
 @polls.get("/polls/<int:id>")
-def get(id: int):
+def get_poll(id: int):
     """Get a poll by its id"""
     
     # Query database for poll
@@ -96,7 +96,7 @@ def get(id: int):
 
 
 @polls.get("/polls/<int:id>/comments")
-def comments(id: int):
+def get_comments(id: int):
     """Get a collection of comments on a specified poll"""
     
     # Query database for poll
@@ -140,7 +140,7 @@ def vote(id: int):
 
 @polls.delete("/polls/<int:id>")
 @auth_required
-def delete(id: int): 
+def delete_poll(id: int): 
     """Delete a poll"""
     
     # Query database for poll

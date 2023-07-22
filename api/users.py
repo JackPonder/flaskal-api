@@ -8,7 +8,7 @@ users = Blueprint("users", __name__)
 
 
 @users.post("/users")
-def register():
+def create_user():
     """Register a new user"""
 
     # Ensure correct data was submitted
@@ -30,12 +30,12 @@ def register():
     db.session.commit()
     
     # Return newly created user
-    return new_user.serialize(), 201, {"location": url_for("users.get", username=new_user.username)}
+    return new_user.serialize(), 201, {"location": url_for("users.get_user", username=new_user.username)}
 
 
 @users.get("/users/<string:username>")
-def get(username: str):
-    """Get a user by their id"""
+def get_user(username: str):
+    """Get a user by their username"""
 
     # Query user from database
     user = db.session.query(User).filter_by(username=username).first()
@@ -45,8 +45,14 @@ def get(username: str):
     return user.serialize()
 
 
+@users.get("/users/self")
+@auth_required
+def get_authenticated_user():
+    return g.user.serialize()
+
+
 @users.get("/users/<string:username>/polls")
-def polls(username: str):
+def get_polls(username: str):
     """Get a collection of all of a user's polls"""
 
     # Query user from database
@@ -58,7 +64,7 @@ def polls(username: str):
 
 
 @users.get("/users/<string:username>/comments")
-def comments(username: str):
+def get_comments(username: str):
     """Get a collection of all of a user's comments"""
 
     # Query user from database
@@ -71,7 +77,7 @@ def comments(username: str):
 
 @users.delete("/users/<string:username>")
 @auth_required
-def delete(username: str):
+def delete_user(username: str):
     """Delete a user"""
 
     # Query user from database
@@ -88,9 +94,3 @@ def delete(username: str):
     db.session.commit()
 
     return "", 204
-
-
-@users.get("/users/self")
-@auth_required
-def get_token_user(): 
-    return g.user.serialize()

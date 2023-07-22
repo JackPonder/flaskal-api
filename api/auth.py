@@ -11,10 +11,10 @@ def auth_required(f):
 
     @wraps(f)
     def decorator(*args, **kwargs):
-        auth = request.headers.get('Authorization')
-        if not auth or len(auth.split()) < 2:
+        auth = request.authorization
+        if not auth:
             abort(401)
-        token = auth.split()[1]
+        token = auth.token
 
         try:
             data = jwt.decode(token, current_app.config.get("SECRET_KEY"), algorithms=["HS256"])

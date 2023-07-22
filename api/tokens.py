@@ -8,7 +8,7 @@ tokens = Blueprint("tokens", __name__)
 
 
 @tokens.post("/tokens")
-def create():
+def new_token():
     """Generate a new JWT token for a user"""
 
     # Get authorization data
