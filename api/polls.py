@@ -135,7 +135,7 @@ def vote(id: int):
     db.session.commit()
 
     # Return updated poll
-    return poll.serialize(), {"location": url_for("polls.get", id=poll.id)}
+    return poll.serialize(), {"location": url_for("polls.get_poll", id=poll.id)}
 
 
 @polls.delete("/polls/<int:id>")
