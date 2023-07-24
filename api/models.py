@@ -1,4 +1,4 @@
-from sqlalchemy import Table, Column, ForeignKey, select, func
+from sqlalchemy import Table, Column, ForeignKey, String, Text, select, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -19,8 +19,8 @@ class User(db.Model):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    username: Mapped[str] = mapped_column(unique=True)
-    password: Mapped[str] = mapped_column()
+    username: Mapped[str] = mapped_column(String(32), unique=True)
+    password: Mapped[str] = mapped_column(String(128))
     date_joined: Mapped[date] = mapped_column(default=datetime.utcnow)
 
     polls: Mapped[list["Poll"]] = relationship(back_populates="creator", cascade="all, delete")
@@ -48,8 +48,8 @@ class Poll(db.Model):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    title: Mapped[str] = mapped_column()
-    tag: Mapped[Optional[str]] = mapped_column()
+    title: Mapped[str] = mapped_column(String(128))
+    tag: Mapped[Optional[str]] = mapped_column(String(32))
     timestamp: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
     creator: Mapped["User"] = relationship(back_populates="polls")
@@ -91,7 +91,7 @@ class PollOption(db.Model):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     poll_id: Mapped[int] = mapped_column(ForeignKey("polls.id"))
-    name: Mapped[str] = mapped_column()
+    name: Mapped[str] = mapped_column(String(128))
     votes: Mapped[int] = mapped_column(default=0)
 
     poll: Mapped["Poll"] = relationship(back_populates="options")
@@ -108,7 +108,7 @@ class PollOption(db.Model):
             "percentage": self.percentage,
             "voters": [voter.username for voter in self.voters]
         }
-    
+
     @property
     def percentage(self) -> int:
         return round(100 * self.votes / self.poll.total_votes) if self.poll.total_votes != 0 else 0
@@ -120,7 +120,7 @@ class Comment(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     poll_id: Mapped[int] = mapped_column(ForeignKey("polls.id"))
-    content: Mapped[str] = mapped_column()
+    content: Mapped[str] = mapped_column(Text)
     timestamp: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
     creator: Mapped["User"] = relationship(back_populates="comments")
