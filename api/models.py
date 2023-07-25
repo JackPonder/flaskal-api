@@ -11,7 +11,7 @@ voters_table = Table(
     "voters",
     db.metadata,
     Column("voter_id", ForeignKey("users.id")),
-    Column("option_id", ForeignKey("poll_options.id")),
+    Column("option_id", ForeignKey("poll_options.id"))
 )
 
 
@@ -23,8 +23,17 @@ class User(db.Model):
     password: Mapped[str] = mapped_column(String(128))
     date_joined: Mapped[date] = mapped_column(default=datetime.utcnow)
 
-    polls: Mapped[list["Poll"]] = relationship(back_populates="creator", cascade="all, delete")
-    comments: Mapped[list["Comment"]] = relationship(back_populates="creator", cascade="all, delete")
+    polls: Mapped[list["Poll"]] = relationship(
+        back_populates="creator", 
+        cascade="all, delete", 
+        order_by="desc(Poll.timestamp)"
+    )
+
+    comments: Mapped[list["Comment"]] = relationship(
+        back_populates="creator", 
+        cascade="all, delete", 
+        order_by="desc(Comment.timestamp)"
+    )
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -36,7 +45,7 @@ class User(db.Model):
     def serialize(self) -> dict:
         return {
             "username": self.username,
-            "dateJoined": self.date_joined,
+            "dateJoined": self.date_joined
         }
 
     def check_password(self, password: str) -> bool:
@@ -52,9 +61,21 @@ class Poll(db.Model):
     tag: Mapped[Optional[str]] = mapped_column(String(32))
     timestamp: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
-    creator: Mapped["User"] = relationship(back_populates="polls")
-    options: Mapped[list["PollOption"]] = relationship(back_populates="poll", cascade="all, delete")
-    comments: Mapped[list["Comment"]] = relationship(back_populates="poll", cascade="all, delete")
+    creator: Mapped["User"] = relationship(
+        back_populates="polls"
+    )
+
+    options: Mapped[list["PollOption"]] = relationship(
+        back_populates="poll", 
+        cascade="all, delete", 
+        order_by="PollOption.id"
+    )
+
+    comments: Mapped[list["Comment"]] = relationship(
+        back_populates="poll", 
+        cascade="all, delete",
+        order_by="Comment.timestamp"
+    )
 
     def __repr__(self) -> str:
         return f"<Poll #{self.id}>"
