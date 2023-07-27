@@ -1,6 +1,7 @@
 from flask import Blueprint
 from werkzeug.exceptions import HTTPException
 from sqlalchemy.exc import SQLAlchemyError
+from marshmallow import ValidationError
 
 errors = Blueprint("errors", __name__)
 
@@ -18,6 +19,15 @@ def http_error(error: HTTPException):
 def sqlalchemy_error(error: SQLAlchemyError):
     return {
         "code": 500,
-        "message": "SQLAlchemy Error", 
+        "message": "Database Error", 
         "description": str(error)
     }, 500
+
+
+@errors.app_errorhandler(ValidationError)
+def validation_error(error: ValidationError):
+    return {
+        "code": 400,
+        "message": "Validation Error", 
+        "description": error.messages
+    }, 400

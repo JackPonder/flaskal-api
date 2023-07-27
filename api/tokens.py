@@ -1,4 +1,5 @@
 from flask import Blueprint, abort, request, current_app
+from sqlalchemy import select
 import jwt
 
 from . import db
@@ -17,7 +18,7 @@ def new_token():
         abort(401)
 
     # Check user credentials
-    current_user = db.session.query(User).filter_by(username=auth.username).first()
+    current_user = db.session.scalars(select(User).where(User.username == auth.username).limit(1)).first()
     if not current_user or not current_user.check_password(auth.password):
         abort(401)
 

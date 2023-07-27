@@ -42,12 +42,6 @@ class User(db.Model):
     def __repr__(self) -> str:
         return f"<User #{self.id}>"
 
-    def serialize(self) -> dict:
-        return {
-            "username": self.username,
-            "dateJoined": self.date_joined
-        }
-
     def check_password(self, password: str) -> bool:
         return check_password_hash(self.password, password)
 
@@ -80,19 +74,6 @@ class Poll(db.Model):
     def __repr__(self) -> str:
         return f"<Poll #{self.id}>"
 
-    def serialize(self) -> dict:
-        return {
-            "id": self.id,
-            "creator": self.creator.username,
-            "title": self.title,
-            "options": [option.serialize() for option in self.options],
-            "totalVotes": self.total_votes,
-            "voters": [voter.username for voter in self.voters],
-            "tag": self.tag,
-            "timestamp": self.timestamp,
-            "numComments": len(self.comments)
-        }
-
     @hybrid_property
     def total_votes(self) -> int:
         return sum(option.votes for option in self.options)
@@ -105,6 +86,10 @@ class Poll(db.Model):
     @property
     def voters(self) -> list[User]:
         return [voter for option in self.options for voter in option.voters]
+    
+    @property
+    def num_comments(self) -> int:
+        return len(self.comments)
 
 
 class PollOption(db.Model):
@@ -120,15 +105,6 @@ class PollOption(db.Model):
 
     def __repr__(self) -> str:
         return f"<Poll Option #{self.id}>"
-
-    def serialize(self) -> dict:
-        return {
-            "id": self.id,
-            "name": self.name,
-            "votes": self.votes,
-            "percentage": self.percentage,
-            "voters": [voter.username for voter in self.voters]
-        }
 
     @property
     def percentage(self) -> int:
@@ -149,13 +125,3 @@ class Comment(db.Model):
 
     def __repr__(self) -> str:
         return f"<Comment #{self.id}>"
-
-    def serialize(self) -> dict:
-        return {
-            "id": self.id,
-            "creator": self.creator.username,
-            "pollId": self.poll.id,
-            "pollTitle": self.poll.title,
-            "content": self.content,
-            "timestamp": self.timestamp
-        }

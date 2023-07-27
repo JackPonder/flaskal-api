@@ -1,10 +1,18 @@
 from flask import Blueprint, url_for, abort, request, g
+from sqlalchemy import select
 
 from . import db
 from .models import Poll, PollOption, Comment
+from .schemas import PollSchema, NewPollSchema, CommentSchema, NewCommentSchema, VoteSchema
 from .auth import auth_required
 
 polls = Blueprint("polls", __name__)
+
+poll_schema = PollSchema()
+new_poll_schema = NewPollSchema()
+comment_schema = CommentSchema()
+new_comment_schema = NewCommentSchema()
+vote_schema = VoteSchema()
 
 
 @polls.post("/polls")
@@ -13,25 +21,20 @@ def create_poll():
     """Create a new poll"""
 
     # Ensure correct data was submitted
-    json = request.get_json()
-    if type(json) != dict: 
-        abort(400)
-    title = json.get("title")
-    options = json.get("options")
-    tag = json.get("tag")
-    if not title or type(options) != list or len(options) < 2:
-        abort(400)
+    new_poll_data = new_poll_schema.load(request.json)
 
     # Add new poll to database
-    new_poll = Poll(creator=g.user, title=title, tag=tag if tag else None)
+    new_poll = Poll(creator=g.user, **{key:value for (key, value) in new_poll_data.items() if key != "options"})
     db.session.add(new_poll)
-    for option in options:
+    for option in new_poll_data["options"]:
         new_option = PollOption(poll=new_poll, name=option)
         db.session.add(new_option)
     db.session.commit()
 
     # Return newly created poll
-    return new_poll.serialize(), 201, {"location": url_for("polls.get_poll", id=new_poll.id)}
+    return poll_schema.dump(new_poll), 201, {
+        "location": url_for("polls.get_poll", id=new_poll.id)
+    }
 
 
 @polls.post("/polls/<int:id>/comments")
@@ -45,20 +48,15 @@ def create_comment(id: int):
         abort(404, description="No poll was found for the specified id")
 
     # Ensure correct data was submitted
-    json = request.get_json()
-    if type(json) != dict: 
-        abort(400)
-    content = json.get("content")
-    if not content:
-        abort(400)
+    new_comment_data = new_comment_schema.load(request.json)
     
     # Add new comment to the database
-    new_comment = Comment(creator=g.user, poll=poll, content=content)
+    new_comment = Comment(creator=g.user, poll=poll, **new_comment_data)
     db.session.add(new_comment)
     db.session.commit()
 
     # Return newly created comment
-    return new_comment.serialize(), 201
+    return comment_schema.dump(new_comment), 201
 
 
 @polls.get("/polls")
@@ -66,21 +64,21 @@ def get_polls():
     """Get a collection of polls"""
 
     # Query database for polls
-    polls = db.session.query(Poll)
+    query = select(Poll)
 
     # Sort according to query parameter
     sort = request.args.get("sort")
     if sort == "new":
-        polls = polls.order_by(Poll.timestamp.desc())
+        query = query.order_by(Poll.timestamp.desc())
     elif sort == "top": 
-        polls = polls.order_by(Poll.total_votes.desc())
+        query = query.order_by(Poll.total_votes.desc())
 
     # Filter according to query parameter
     tag = request.args.get("tag")
     if tag:
-        polls = polls.filter_by(tag=tag)
+        query = query.filter_by(tag=tag)
 
-    return [poll.serialize() for poll in polls.all()]
+    return poll_schema.dump(db.session.scalars(query).all(), many=True)
 
 
 @polls.get("/polls/<int:id>")
@@ -92,7 +90,7 @@ def get_poll(id: int):
     if not poll: 
         abort(404, description="No poll was found for the specified id")
     
-    return poll.serialize()
+    return poll_schema.dump(poll)
 
 
 @polls.get("/polls/<int:id>/comments")
@@ -104,7 +102,7 @@ def get_comments(id: int):
     if not poll: 
         abort(404, description="No poll was found for the specified id")
     
-    return [comment.serialize() for comment in poll.comments]
+    return comment_schema.dump(poll.comments, many=True)
 
 
 @polls.patch("/polls/<int:id>/vote")
@@ -118,12 +116,10 @@ def vote(id: int):
         abort(404, description="No poll was found for the specified id")
     
     # Ensure correct data was submitted
-    json = request.get_json()
-    if type(json) != dict: 
-        abort(400)
-    option = db.session.get(PollOption, json.get("vote"))
-    if not option or option not in poll.options:
-        abort(400)
+    vote_data = vote_schema.load(request.json)
+    option = next((option for option in poll.options if option.name == vote_data["vote"]), None)
+    if not option: 
+        abort(400, description="Invalid vote")
     
     # Ensure voter has not already voted on this poll
     if g.user in poll.voters:
@@ -135,7 +131,9 @@ def vote(id: int):
     db.session.commit()
 
     # Return updated poll
-    return poll.serialize(), {"location": url_for("polls.get_poll", id=poll.id)}
+    return poll_schema.dump(poll), {
+        "location": url_for("polls.get_poll", id=poll.id)
+    }
 
 
 @polls.delete("/polls/<int:id>")
