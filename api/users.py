@@ -3,13 +3,12 @@ from sqlalchemy import select
 
 from . import db
 from .models import User
-from .schemas import UserSchema, NewUserSchema, PollSchema, CommentSchema
+from .schemas import UserSchema, PollSchema, CommentSchema
 from .auth import auth_required
 
 users = Blueprint("users", __name__)
 
 user_schema = UserSchema()
-new_user_schema = NewUserSchema()
 poll_schema = PollSchema()
 comment_schema = CommentSchema()
 
@@ -19,7 +18,7 @@ def create_user():
     """Register a new user"""
 
     # Ensure correct data was submitted
-    new_user_data = new_user_schema.load(request.json)
+    new_user_data = user_schema.load(request.json)
 
     # Add new user to database
     new_user = User(**new_user_data)

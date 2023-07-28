@@ -11,9 +11,10 @@ class BaseSchema(Schema):
         field_obj.data_key = next(name_parts) + "".join(s.title() for s in name_parts)
 
 
-class NewUserSchema(BaseSchema):
+class UserSchema(BaseSchema):
     username = fields.Str(required=True)
-    password = fields.Str(required=True)
+    password = fields.Str(required=True, load_only=True)
+    date_joined = fields.Date(dump_only=True)
 
     @validates("username")
     def validate_username(self, value):
@@ -27,11 +28,6 @@ class NewUserSchema(BaseSchema):
     def validate_password(self, value):
         if len(value) < 4:
             raise ValidationError("Password must be at least 4 characters")
-
-
-class UserSchema(BaseSchema):
-    username = fields.Str()
-    date_joined = fields.Date()
 
 
 class NewPollSchema(BaseSchema):
@@ -49,7 +45,7 @@ class NewPollSchema(BaseSchema):
         if len(value) < 2 or len(value) > 6:
             raise ValidationError("Poll must have 2-6 options")
         
-        if [option for option in value if not option]: 
+        if any(not option for option in value): 
             raise ValidationError("All options must not be blank")
         
         if len(set(value)) != len(value):
@@ -61,18 +57,6 @@ class NewPollSchema(BaseSchema):
             raise ValidationError("Tag must not be blank")
 
 
-class PollSchema(BaseSchema):
-    id = fields.Int()
-    creator = fields.Pluck(UserSchema, "username")
-    title = fields.Str()
-    options = fields.Nested("PollOptionSchema", many=True)
-    total_votes = fields.Int()
-    voters = fields.Pluck(UserSchema, "username", many=True)
-    tag = fields.Str()
-    timestamp = fields.DateTime()
-    num_comments = fields.Int()
-
-
 class PollOptionSchema(BaseSchema):
     name = fields.Str()
     votes = fields.Int()
@@ -80,22 +64,30 @@ class PollOptionSchema(BaseSchema):
     voters = fields.Pluck(UserSchema, "username", many=True)
 
 
-class NewCommentSchema(BaseSchema):
+class PollSchema(BaseSchema):
+    id = fields.Int()
+    creator = fields.Pluck(UserSchema, "username")
+    title = fields.Str()
+    options = fields.Nested(PollOptionSchema, many=True)
+    total_votes = fields.Int()
+    voters = fields.Pluck(UserSchema, "username", many=True)
+    tag = fields.Str()
+    timestamp = fields.DateTime()
+    num_comments = fields.Int()
+
+
+class CommentSchema(BaseSchema):
+    id = fields.Int(dump_only=True)
+    creator = fields.Pluck(UserSchema, "username", dump_only=True)
+    poll_id = fields.Int(dump_only=True)
+    poll_title = fields.Str(attribute="poll.title", dump_only=True)
     content = fields.Str(required=True)
+    timestamp = fields.DateTime(dump_only=True)
 
     @validates("content")
     def validate_content(self, value):
         if not value: 
             raise ValidationError("Content must not be blank")
-
-
-class CommentSchema(BaseSchema):
-    id = fields.Int()
-    creator = fields.Pluck(UserSchema, "username")
-    poll_id = fields.Int()
-    poll_title = fields.Str(attribute="poll.title")
-    content = fields.Str()
-    timestamp = fields.DateTime()
 
 
 class VoteSchema(BaseSchema):

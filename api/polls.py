@@ -3,7 +3,7 @@ from sqlalchemy import select
 
 from . import db
 from .models import Poll, PollOption, Comment
-from .schemas import PollSchema, NewPollSchema, CommentSchema, NewCommentSchema, VoteSchema
+from .schemas import PollSchema, NewPollSchema, CommentSchema, VoteSchema
 from .auth import auth_required
 
 polls = Blueprint("polls", __name__)
@@ -11,7 +11,6 @@ polls = Blueprint("polls", __name__)
 poll_schema = PollSchema()
 new_poll_schema = NewPollSchema()
 comment_schema = CommentSchema()
-new_comment_schema = NewCommentSchema()
 vote_schema = VoteSchema()
 
 
@@ -24,9 +23,10 @@ def create_poll():
     new_poll_data = new_poll_schema.load(request.json)
 
     # Add new poll to database
-    new_poll = Poll(creator=g.user, **{key:value for (key, value) in new_poll_data.items() if key != "options"})
+    options = new_poll_data.pop("options")
+    new_poll = Poll(creator=g.user, **new_poll_data)
     db.session.add(new_poll)
-    for option in new_poll_data["options"]:
+    for option in options:
         new_option = PollOption(poll=new_poll, name=option)
         db.session.add(new_option)
     db.session.commit()
@@ -48,7 +48,7 @@ def create_comment(id: int):
         abort(404, description="No poll was found for the specified id")
 
     # Ensure correct data was submitted
-    new_comment_data = new_comment_schema.load(request.json)
+    new_comment_data = comment_schema.load(request.json)
     
     # Add new comment to the database
     new_comment = Comment(creator=g.user, poll=poll, **new_comment_data)
@@ -76,7 +76,7 @@ def get_polls():
     # Filter according to query parameter
     tag = request.args.get("tag")
     if tag:
-        query = query.filter_by(tag=tag)
+        query = query.where(Poll.tag == tag)
 
     return poll_schema.dump(db.session.scalars(query).all(), many=True)
 
