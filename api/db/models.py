@@ -1,7 +1,7 @@
 from sqlalchemy import Table, Column, ForeignKey, String, Text, select, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.ext.hybrid import hybrid_property
-from typing import Optional
+from passlib.hash import pbkdf2_sha256
 from datetime import date, datetime
 
 
@@ -37,11 +37,15 @@ class User(Base):
         order_by="desc(Comment.timestamp)"
     )
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.password = pbkdf2_sha256.hash(self.password)
+
     def __repr__(self) -> str:
         return f"<User #{self.id}>"
 
     def check_password(self, password: str) -> bool:
-        return self.password == password
+        return pbkdf2_sha256.verify(password, self.password)
 
 
 class Poll(Base):
@@ -50,7 +54,7 @@ class Poll(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     title: Mapped[str] = mapped_column(String(128))
-    tag: Mapped[Optional[str]] = mapped_column(String(32))
+    tag: Mapped[str | None] = mapped_column(String(32))
     timestamp: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
     creator: Mapped["User"] = relationship(
