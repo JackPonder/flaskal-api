@@ -66,7 +66,7 @@ class Poll(Base):
     comments: Mapped[list["Comment"]] = relationship(
         back_populates="poll", 
         cascade="all, delete",
-        order_by="Comment.timestamp"
+        order_by="desc(Comment.timestamp)"
     )
 
     def __repr__(self) -> str:

@@ -3,8 +3,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..dependencies import get_db, get_auth_user
-from ..db.models import User, Poll, PollOption
+from ..db.models import User, Poll, PollOption, Comment
 from ..schemas.polls import NewPollSchema, PollSchema
+from ..schemas.comments import NewCommentSchema, CommentSchema
 
 router = APIRouter()
 
@@ -28,6 +29,28 @@ def create_poll(
     db.commit()
 
     return new_poll
+
+
+@router.post("/polls/{poll_id}/comments", response_model=CommentSchema, status_code=201)
+def create_comment(
+    poll_id: int,
+    comment_data: NewCommentSchema,
+    user: User = Depends(get_auth_user),
+    db: Session = Depends(get_db),    
+):
+    """Create a comment on a poll"""
+
+    # Ensure poll exists
+    poll = db.get(Poll, poll_id)
+    if poll is None:
+        raise HTTPException(404, "No poll was found for the specified id")
+
+    # Add comment to the database
+    new_comment = Comment(poll=poll, creator=user, **comment_data.model_dump())
+    db.add(new_comment)
+    db.commit()
+
+    return new_comment
 
 
 @router.get("/polls", response_model=list[PollSchema])
@@ -67,6 +90,21 @@ def get_poll(
         raise HTTPException(404, "No poll was found for the specified id")
     
     return poll
+
+
+@router.get("/polls/{poll_id}/comments", response_model=list[CommentSchema])
+def get_comments(
+    poll_id: int,
+    db: Session = Depends(get_db),    
+):
+    """Get a collection of a poll's comments"""
+
+    # Get poll if it exists
+    poll = db.get(Poll, poll_id)
+    if poll is None:
+        raise HTTPException(404, "No poll was found for the specified id")
+    
+    return poll.comments
 
 
 @router.delete("/polls/{poll_id}", status_code=204)
