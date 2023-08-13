@@ -115,7 +115,7 @@ def delete_poll(
 ):
     """Delete a poll"""
 
-    # Get poll if its exists
+    # Get poll if it exists
     poll = db.get(Poll, poll_id)
     if poll is None:
         raise HTTPException(404, "No poll was found for the specified id")
