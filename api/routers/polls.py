@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..dependencies import get_db, get_auth_user
@@ -27,6 +28,30 @@ def create_poll(
     db.commit()
 
     return new_poll
+
+
+@router.get("/polls", response_model=list[PollSchema])
+def get_polls(
+    sort: str | None = None,
+    tag: str | None = None,
+    db: Session = Depends(get_db)
+): 
+    """Get a collection of polls"""
+
+    # Query database for polls
+    query = select(Poll)
+
+    # Sort polls
+    if sort == "new":
+        query = query.order_by(Poll.timestamp.desc())
+    elif sort == "top":
+        query = query.order_by(Poll.total_votes.desc())
+
+    # Filter polls
+    if tag is not None:
+        query = query.where(Poll.tag == tag)
+
+    return db.scalars(query).all()
 
 
 @router.get("/polls/{poll_id}", response_model=PollSchema)
