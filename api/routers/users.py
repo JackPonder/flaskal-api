@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 from ..dependencies import get_db, get_auth_user
 from ..db.models import User
 from ..schemas.users import NewUserSchema, UserSchema
+from ..schemas.polls import PollSchema
+from ..schemas.comments import CommentSchema
 
 router = APIRouter()
 
@@ -41,6 +43,36 @@ def get_user(
         raise HTTPException(404, "No user was found for the specified username")
 
     return user
+
+
+@router.get("/users/{username}/polls", response_model=list[PollSchema])
+def get_polls(
+    username: str, 
+    db: Session = Depends(get_db),
+):
+    """Get a collection of a user's polls"""
+
+    # Get user if they exist
+    user = db.scalar(select(User).where(User.username == username))
+    if user is None:
+        raise HTTPException(404, "No user was found for the specified username")
+
+    return user.polls
+
+
+@router.get("/users/{username}/comments", response_model=list[CommentSchema])
+def get_comments(
+    username: str, 
+    db: Session = Depends(get_db),
+):
+    """Get a collection of a user's comments"""
+
+    # Get user if they exist
+    user = db.scalar(select(User).where(User.username == username))
+    if user is None:
+        raise HTTPException(404, "No user was found for the specified username")
+
+    return user.comments
 
 
 @router.delete("/users/{username}", status_code=204)
