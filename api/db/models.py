@@ -1,21 +1,23 @@
 from sqlalchemy import Table, Column, ForeignKey, String, Text, select, func
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.ext.hybrid import hybrid_property
-from werkzeug.security import generate_password_hash, check_password_hash
 from typing import Optional
 from datetime import date, datetime
 
-from . import db
+
+class Base(DeclarativeBase):
+    pass
+
 
 voters_table = Table(
     "voters",
-    db.metadata,
+    Base.metadata,
     Column("voter_id", ForeignKey("users.id")),
     Column("option_id", ForeignKey("poll_options.id"))
 )
 
 
-class User(db.Model):
+class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -35,18 +37,14 @@ class User(db.Model):
         order_by="desc(Comment.timestamp)"
     )
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.password = generate_password_hash(kwargs.get("password"))
-
     def __repr__(self) -> str:
         return f"<User #{self.id}>"
 
     def check_password(self, password: str) -> bool:
-        return check_password_hash(self.password, password)
+        return self.password == password
 
 
-class Poll(db.Model):
+class Poll(Base):
     __tablename__ = "polls"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -92,7 +90,7 @@ class Poll(db.Model):
         return len(self.comments)
 
 
-class PollOption(db.Model):
+class PollOption(Base):
     __tablename__ = "poll_options"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -111,7 +109,7 @@ class PollOption(db.Model):
         return round(100 * self.votes / self.poll.total_votes) if self.poll.total_votes != 0 else 0
 
 
-class Comment(db.Model):
+class Comment(Base):
     __tablename__ = "comments"
 
     id: Mapped[int] = mapped_column(primary_key=True)
