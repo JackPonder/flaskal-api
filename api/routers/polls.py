@@ -12,8 +12,8 @@ router = APIRouter()
 @router.post("/polls", response_model=PollSchema, status_code=201)
 def create_poll(
     poll_data: NewPollSchema, 
-    db: Session = Depends(get_db),
     user: User = Depends(get_auth_user),
+    db: Session = Depends(get_db),
 ):
     """Create a poll"""
 
@@ -34,7 +34,7 @@ def create_poll(
 def get_polls(
     sort: str | None = None,
     tag: str | None = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ): 
     """Get a collection of polls"""
 
@@ -67,3 +67,25 @@ def get_poll(
         raise HTTPException(404, "No poll was found for the specified id")
     
     return poll
+
+
+@router.delete("/polls/{poll_id}", status_code=204)
+def delete_poll(
+    poll_id: int,
+    user: User = Depends(get_auth_user),
+    db: Session = Depends(get_db),
+):
+    """Delete a poll"""
+
+    # Get poll if its exists
+    poll = db.get(Poll, poll_id)
+    if poll is None:
+        raise HTTPException(404, "No poll was found for the specified id")
+    
+    # Ensure user is authorized to delete this poll
+    if user.id != poll.creator_id:
+        raise HTTPException(403)
+    
+    # Delete poll from the database
+    db.delete(poll)
+    db.commit()
