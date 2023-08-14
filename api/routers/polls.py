@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from ..dependencies import get_db, get_auth_user
 from ..db.models import User, Poll, PollOption, Comment
-from ..schemas.polls import NewPollSchema, PollSchema
+from ..schemas.polls import NewPollSchema, PollSchema, VoteSchema
 from ..schemas.comments import NewCommentSchema, CommentSchema
 
 router = APIRouter()
@@ -105,6 +105,37 @@ def get_comments(
         raise HTTPException(404, "No poll was found for the specified id")
     
     return poll.comments
+
+
+@router.patch("/polls/{poll_id}/vote", response_model=PollSchema)
+def vote(
+    poll_id: int,
+    vote_data: VoteSchema,
+    user: User = Depends(get_auth_user),
+    db: Session = Depends(get_db),
+):
+    """Vote on a poll"""
+
+    # Get poll if it exists
+    poll = db.get(Poll, poll_id)
+    if poll is None:
+        raise HTTPException(404, "No poll was found for the specified id")
+    
+    # Ensure user has not already voted on this poll
+    if user in poll.voters:
+        raise HTTPException(409, "User has already voted on this poll")
+    
+    # Ensure valid vote was submitted
+    option = next((option for option in poll.options if option.name == vote_data.vote), None)
+    if option is None:
+        raise HTTPException(400, "Invalid vote")
+    
+    # Update database with new vote
+    option.votes += 1
+    option.voters.append(user)
+    db.commit()
+
+    return poll
 
 
 @router.delete("/polls/{poll_id}", status_code=204)
