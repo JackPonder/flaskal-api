@@ -71,7 +71,7 @@ def get_polls(
         query = query.order_by(Poll.total_votes.desc())
 
     # Filter polls
-    if tag is not None:
+    if tag:
         query = query.where(Poll.tag == tag)
 
     return db.scalars(query).all()
