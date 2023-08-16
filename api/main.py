@@ -5,7 +5,7 @@ import os
 
 from .routers import tokens, users, polls, comments
 
-app = FastAPI()
+app = FastAPI(title="Flaskal API", docs_url=None, redoc_url="/")
 
 allowed_origins = os.environ.get("CORS_ALLOWED_ORIGINS")
 

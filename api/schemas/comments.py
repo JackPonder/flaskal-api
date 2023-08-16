@@ -2,10 +2,11 @@ from pydantic import Field, AliasPath
 from datetime import datetime
 
 from .base import CamelCaseSchema
+from .validators import NonEmptyString
 
 
 class NewCommentSchema(CamelCaseSchema):
-    content: str
+    content: NonEmptyString
 
 
 class CommentSchema(CamelCaseSchema):

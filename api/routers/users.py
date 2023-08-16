@@ -8,7 +8,7 @@ from ..schemas.users import NewUserSchema, UserSchema
 from ..schemas.polls import PollSchema
 from ..schemas.comments import CommentSchema
 
-router = APIRouter()
+router = APIRouter(tags=["Users"])
 
 
 @router.post("/users", response_model=UserSchema, status_code=201)

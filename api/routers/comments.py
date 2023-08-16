@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from ..dependencies import get_db, get_auth_user
 from ..db.models import User, Comment
 
-router = APIRouter()
+router = APIRouter(tags=["Comments"])
 
 
 @router.delete("/comments/{comment_id}", status_code=204)

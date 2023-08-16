@@ -1,15 +1,24 @@
-from pydantic import Field, AliasPath, field_serializer
+from pydantic import Field, AliasPath, field_validator, field_serializer
 from datetime import datetime
 from typing import Optional
 
 from .base import CamelCaseSchema
+from .validators import NonEmptyString
 from .users import UserSchema
 
 
 class NewPollSchema(CamelCaseSchema):
-    title: str
-    options: list[str]
-    tag: Optional[str]
+    title: NonEmptyString = Field(max_length=128)
+    options: list[NonEmptyString] = Field(min_length=2, max_length=6)
+    tag: Optional[NonEmptyString] = Field(max_length=32)
+
+    @field_validator("options")
+    @classmethod
+    def validate_options(cls, value: list[str]) -> list[str]:
+        if len(set(value)) != len(value):
+            raise ValueError("Poll must not have duplicate options")
+
+        return value
 
 
 class PollOptionSchema(CamelCaseSchema):

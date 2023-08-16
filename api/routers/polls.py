@@ -8,7 +8,7 @@ from ..db.models import User, Poll, PollOption, Comment
 from ..schemas.polls import NewPollSchema, PollSchema, VoteSchema
 from ..schemas.comments import NewCommentSchema, CommentSchema
 
-router = APIRouter()
+router = APIRouter(tags=["Polls"])
 
 
 @router.post("/polls", response_model=PollSchema, status_code=201)

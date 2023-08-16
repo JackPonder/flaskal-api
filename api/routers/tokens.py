@@ -8,13 +8,14 @@ import jwt
 
 from ..dependencies import get_db
 from ..db.models import User
+from ..schemas.tokens import AccessTokenSchema
 
-router = APIRouter()
+router = APIRouter(tags=["Tokens"])
 
 basic_auth = HTTPBasic()
 
 
-@router.post("/tokens")
+@router.post("/tokens", response_model=AccessTokenSchema)
 def new_token(
     auth: HTTPBasicCredentials = Depends(basic_auth),
     db: Session = Depends(get_db),
@@ -28,4 +29,4 @@ def new_token(
     payload = {"sub": user.id}
     access_token = jwt.encode(payload, os.environ.get("SECRET_KEY"), "HS256")
 
-    return {"accessToken": access_token, "tokenType": "Bearer"}
+    return {"accessToken": access_token}
