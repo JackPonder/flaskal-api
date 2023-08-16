@@ -3,6 +3,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 from passlib.hash import pbkdf2_sha256
 from datetime import date, datetime
+from typing import Optional
 
 
 class Base(DeclarativeBase):
@@ -54,7 +55,7 @@ class Poll(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     title: Mapped[str] = mapped_column(String(128))
-    tag: Mapped[str | None] = mapped_column(String(32))
+    tag: Mapped[Optional[str]] = mapped_column(String(32))
     timestamp: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
     creator: Mapped["User"] = relationship(

@@ -1,5 +1,6 @@
 from pydantic import Field, AliasPath, field_serializer
 from datetime import datetime
+from typing import Optional
 
 from .base import CamelCaseSchema
 from .users import UserSchema
@@ -8,7 +9,7 @@ from .users import UserSchema
 class NewPollSchema(CamelCaseSchema):
     title: str
     options: list[str]
-    tag: str | None
+    tag: Optional[str]
 
 
 class PollOptionSchema(CamelCaseSchema):
@@ -29,7 +30,7 @@ class PollSchema(CamelCaseSchema):
     options: list[PollOptionSchema]
     total_votes: int
     voters: list[UserSchema]
-    tag: str | None
+    tag: Optional[str]
     num_comments: int
     timestamp: datetime
 

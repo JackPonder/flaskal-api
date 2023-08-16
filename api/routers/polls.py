@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from typing import Optional
 
 from ..dependencies import get_db, get_auth_user
 from ..db.models import User, Poll, PollOption, Comment
@@ -55,8 +56,8 @@ def create_comment(
 
 @router.get("/polls", response_model=list[PollSchema])
 def get_polls(
-    sort: str | None = None,
-    tag: str | None = None,
+    sort: Optional[str] = None,
+    tag: Optional[str] = None,
     db: Session = Depends(get_db),
 ): 
     """Get a collection of polls"""
