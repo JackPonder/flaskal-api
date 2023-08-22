@@ -30,6 +30,15 @@ def create_user(
     return new_user
 
 
+@router.get("/users/self", response_model=UserSchema)
+def get_self(
+    user: User = Depends(get_auth_user)
+):
+    """Get a user via their JWT access token"""
+
+    return user
+
+
 @router.get("/users/{username}", response_model=UserSchema)
 def get_user(
     username: str, 
