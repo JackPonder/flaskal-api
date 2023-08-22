@@ -11,7 +11,7 @@ class NewCommentSchema(CamelCaseSchema):
 
 class CommentSchema(CamelCaseSchema):
     id: int
-    creator: str = Field(alias=AliasPath("creator", "username"))
+    creator: str = Field(validation_alias=AliasPath("creator", "username"))
     poll_id: int
     poll_title: str = Field(validation_alias=AliasPath("poll", "title"), serialization_alias="pollTitle")
     content: str
