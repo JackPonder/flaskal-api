@@ -65,15 +65,15 @@ def get_polls(
     # Query database for polls
     query = select(Poll)
 
-    # Sort polls
-    if sort == "new":
-        query = query.order_by(Poll.timestamp.desc())
-    elif sort == "top":
-        query = query.order_by(Poll.total_votes.desc())
-
     # Filter polls
     if tag:
         query = query.where(Poll.tag == tag)
+
+    # Sort polls
+    if sort == "new":
+        query = query.order_by(Poll.created_at.desc())
+    elif sort == "top":
+        query = query.order_by(Poll.total_votes.desc())
 
     return db.scalars(query).all()
 

@@ -1,5 +1,5 @@
 from pydantic import Field
-from datetime import date
+from datetime import datetime
 
 from .base import CamelCaseSchema
 
@@ -11,4 +11,4 @@ class NewUserSchema(CamelCaseSchema):
 
 class UserSchema(CamelCaseSchema):
     username: str
-    date_joined: date
+    created_at: datetime

@@ -15,4 +15,4 @@ class CommentSchema(CamelCaseSchema):
     poll_id: int
     poll_title: str = Field(validation_alias=AliasPath("poll", "title"), serialization_alias="pollTitle")
     content: str
-    timestamp: datetime
+    created_at: datetime

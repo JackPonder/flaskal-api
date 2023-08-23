@@ -1,8 +1,8 @@
-from sqlalchemy import Table, Column, ForeignKey, String, Text, select, func
+from sqlalchemy import Table, Column, ForeignKey, SQLColumnExpression, String, Text, select, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 from passlib.hash import pbkdf2_sha256
-from datetime import date, datetime
+from datetime import datetime
 from typing import Optional
 
 
@@ -13,8 +13,8 @@ class Base(DeclarativeBase):
 voters_table = Table(
     "voters",
     Base.metadata,
-    Column("voter_id", ForeignKey("users.id")),
-    Column("option_id", ForeignKey("poll_options.id"))
+    Column("voter_id", ForeignKey("users.id"), primary_key=True),
+    Column("option_id", ForeignKey("poll_options.id"), primary_key=True)
 )
 
 
@@ -24,18 +24,23 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column(String(32), unique=True)
     password: Mapped[str] = mapped_column(String(128))
-    date_joined: Mapped[date] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
     polls: Mapped[list["Poll"]] = relationship(
         back_populates="creator", 
         cascade="all, delete", 
-        order_by="desc(Poll.timestamp)"
+        order_by="desc(Poll.created_at)"
     )
 
     comments: Mapped[list["Comment"]] = relationship(
         back_populates="creator", 
         cascade="all, delete", 
-        order_by="desc(Comment.timestamp)"
+        order_by="desc(Comment.created_at)"
+    )
+
+    voted_options: Mapped[list["PollOption"]] = relationship(
+        secondary=voters_table,
+        back_populates="voters"
     )
 
     def __init__(self, **kwargs):
@@ -56,11 +61,9 @@ class Poll(Base):
     creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     title: Mapped[str] = mapped_column(String(128))
     tag: Mapped[Optional[str]] = mapped_column(String(32))
-    timestamp: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
-    creator: Mapped["User"] = relationship(
-        back_populates="polls"
-    )
+    creator: Mapped["User"] = relationship(back_populates="polls")
 
     options: Mapped[list["PollOption"]] = relationship(
         back_populates="poll", 
@@ -71,7 +74,7 @@ class Poll(Base):
     comments: Mapped[list["Comment"]] = relationship(
         back_populates="poll", 
         cascade="all, delete",
-        order_by="desc(Comment.timestamp)"
+        order_by="desc(Comment.created_at)"
     )
 
     def __repr__(self) -> str:
@@ -83,7 +86,7 @@ class Poll(Base):
 
     @total_votes.inplace.expression
     @classmethod
-    def total_votes(cls):
+    def total_votes_expression(cls) -> SQLColumnExpression[int]:
         return select(func.sum(PollOption.votes)).where(PollOption.poll_id == cls.id).label("total_votes")
 
     @property
@@ -104,7 +107,11 @@ class PollOption(Base):
     votes: Mapped[int] = mapped_column(default=0)
 
     poll: Mapped["Poll"] = relationship(back_populates="options")
-    voters: Mapped[list["User"]] = relationship(secondary=voters_table)
+
+    voters: Mapped[list["User"]] = relationship(
+        secondary=voters_table,
+        back_populates="voted_options"
+    )
 
     def __repr__(self) -> str:
         return f"<Poll Option #{self.id}>"
@@ -121,7 +128,7 @@ class Comment(Base):
     creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     poll_id: Mapped[int] = mapped_column(ForeignKey("polls.id"))
     content: Mapped[str] = mapped_column(Text)
-    timestamp: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
     creator: Mapped["User"] = relationship(back_populates="comments")
     poll: Mapped["Poll"] = relationship(back_populates="comments")

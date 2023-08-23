@@ -41,7 +41,7 @@ class PollSchema(CamelCaseSchema):
     voters: list[UserSchema]
     tag: Optional[str]
     num_comments: int
-    timestamp: datetime
+    created_at: datetime
 
     @field_serializer("voters")
     def serialize_voters(self, voters: list[UserSchema]) -> list[str]: 
