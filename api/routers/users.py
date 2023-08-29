@@ -1,8 +1,7 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 
-from ..dependencies import get_db, get_auth_user
+from ..dependencies import DatabaseSession, AuthenticatedUser
 from ..db.models import User
 from ..schemas.users import NewUserSchema, UserSchema
 from ..schemas.polls import PollSchema
@@ -14,7 +13,7 @@ router = APIRouter(tags=["Users"])
 @router.post("/users", response_model=UserSchema, status_code=201)
 def create_user(
     user_data: NewUserSchema, 
-    db: Session = Depends(get_db),
+    db: DatabaseSession,
 ):
     """Register a new user"""
 
@@ -32,7 +31,7 @@ def create_user(
 
 @router.get("/users/self", response_model=UserSchema)
 def get_self(
-    user: User = Depends(get_auth_user)
+    user: AuthenticatedUser
 ):
     """Get a user via their JWT access token"""
 
@@ -42,7 +41,7 @@ def get_self(
 @router.get("/users/{username}", response_model=UserSchema)
 def get_user(
     username: str, 
-    db: Session = Depends(get_db),
+    db: DatabaseSession,
 ):
     """Get a user by their username"""
 
@@ -57,7 +56,7 @@ def get_user(
 @router.get("/users/{username}/polls", response_model=list[PollSchema])
 def get_polls(
     username: str, 
-    db: Session = Depends(get_db),
+    db: DatabaseSession,
 ):
     """Get a collection of a user's polls"""
 
@@ -72,7 +71,7 @@ def get_polls(
 @router.get("/users/{username}/comments", response_model=list[CommentSchema])
 def get_comments(
     username: str, 
-    db: Session = Depends(get_db),
+    db: DatabaseSession,
 ):
     """Get a collection of a user's comments"""
 
@@ -87,8 +86,8 @@ def get_comments(
 @router.delete("/users/{username}", status_code=204)
 def delete_user(
     username: str, 
-    user: User = Depends(get_auth_user),
-    db: Session = Depends(get_db),
+    user: AuthenticatedUser,
+    db: DatabaseSession,
 ):
     """Delete a user"""
 

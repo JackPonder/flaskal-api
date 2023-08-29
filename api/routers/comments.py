@@ -1,8 +1,7 @@
-from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, HTTPException
 
-from ..dependencies import get_db, get_auth_user
-from ..db.models import User, Comment
+from ..dependencies import DatabaseSession, AuthenticatedUser
+from ..db.models import Comment
 
 router = APIRouter(tags=["Comments"])
 
@@ -10,8 +9,8 @@ router = APIRouter(tags=["Comments"])
 @router.delete("/comments/{comment_id}", status_code=204)
 def delete_comment(
     comment_id: int,
-    user: User = Depends(get_auth_user),
-    db: Session = Depends(get_db),
+    user: AuthenticatedUser,
+    db: DatabaseSession,
 ):
     """Delete a comment"""
 

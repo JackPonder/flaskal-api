@@ -1,6 +1,7 @@
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
+from typing import Annotated
 
 import os
 import jwt
@@ -9,6 +10,7 @@ from .db.session import SessionLocal
 from .db.models import User
 
 bearer_auth = HTTPBearer()
+BearerAuth = Annotated[HTTPAuthorizationCredentials, Depends(bearer_auth)]
 
 
 def get_db():
@@ -16,9 +18,12 @@ def get_db():
         yield session
 
 
+DatabaseSession = Annotated[Session, Depends(get_db)]
+
+
 def get_auth_user(
-    auth: HTTPAuthorizationCredentials = Depends(bearer_auth),
-    db: Session = Depends(get_db),
+    auth: BearerAuth,
+    db: DatabaseSession,
 ):
     """Get the current authenticated user"""
 
@@ -35,3 +40,6 @@ def get_auth_user(
         raise HTTPException(401)
 
     return user
+
+
+AuthenticatedUser = Annotated[User, Depends(get_auth_user)]

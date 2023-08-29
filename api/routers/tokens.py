@@ -1,24 +1,25 @@
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from typing import Annotated
 
 import os
 import jwt
 
-from ..dependencies import get_db
+from ..dependencies import DatabaseSession
 from ..db.models import User
 from ..schemas.tokens import AccessTokenSchema
 
 router = APIRouter(tags=["Tokens"])
 
 basic_auth = HTTPBasic()
+BasicAuth = Annotated[HTTPBasicCredentials, Depends(basic_auth)]
 
 
 @router.post("/tokens", response_model=AccessTokenSchema)
 def new_token(
-    auth: HTTPBasicCredentials = Depends(basic_auth),
-    db: Session = Depends(get_db),
+    auth: BasicAuth,
+    db: DatabaseSession,
 ):
     """Get a new JWT access token for a user"""
 

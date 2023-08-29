@@ -1,10 +1,9 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 from typing import Optional
 
-from ..dependencies import get_db, get_auth_user
-from ..db.models import User, Poll, PollOption, Comment
+from ..dependencies import DatabaseSession, AuthenticatedUser
+from ..db.models import Poll, PollOption, Comment
 from ..schemas.polls import NewPollSchema, PollSchema, VoteSchema
 from ..schemas.comments import NewCommentSchema, CommentSchema
 
@@ -14,8 +13,8 @@ router = APIRouter(tags=["Polls"])
 @router.post("/polls", response_model=PollSchema, status_code=201)
 def create_poll(
     poll_data: NewPollSchema, 
-    user: User = Depends(get_auth_user),
-    db: Session = Depends(get_db),
+    user: AuthenticatedUser,
+    db: DatabaseSession,
 ):
     """Create a poll"""
 
@@ -36,8 +35,8 @@ def create_poll(
 def create_comment(
     poll_id: int,
     comment_data: NewCommentSchema,
-    user: User = Depends(get_auth_user),
-    db: Session = Depends(get_db),    
+    user: AuthenticatedUser,
+    db: DatabaseSession,    
 ):
     """Create a comment on a poll"""
 
@@ -56,9 +55,9 @@ def create_comment(
 
 @router.get("/polls", response_model=list[PollSchema])
 def get_polls(
+    db: DatabaseSession,
     sort: Optional[str] = None,
     tag: Optional[str] = None,
-    db: Session = Depends(get_db),
 ): 
     """Get a collection of polls"""
 
@@ -81,7 +80,7 @@ def get_polls(
 @router.get("/polls/{poll_id}", response_model=PollSchema)
 def get_poll(
     poll_id: int,
-    db: Session = Depends(get_db),
+    db: DatabaseSession,
 ):
     """Get a poll by its id"""
 
@@ -96,7 +95,7 @@ def get_poll(
 @router.get("/polls/{poll_id}/comments", response_model=list[CommentSchema])
 def get_comments(
     poll_id: int,
-    db: Session = Depends(get_db),    
+    db: DatabaseSession,    
 ):
     """Get a collection of a poll's comments"""
 
@@ -112,8 +111,8 @@ def get_comments(
 def vote(
     poll_id: int,
     vote_data: VoteSchema,
-    user: User = Depends(get_auth_user),
-    db: Session = Depends(get_db),
+    user: AuthenticatedUser,
+    db: DatabaseSession,
 ):
     """Vote on a poll"""
 
@@ -142,8 +141,8 @@ def vote(
 @router.delete("/polls/{poll_id}", status_code=204)
 def delete_poll(
     poll_id: int,
-    user: User = Depends(get_auth_user),
-    db: Session = Depends(get_db),
+    user: AuthenticatedUser,
+    db: DatabaseSession,
 ):
     """Delete a poll"""
 
